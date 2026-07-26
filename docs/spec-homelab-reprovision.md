@@ -87,14 +87,14 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 - **K8s workloads:** Flux GitOps watching `manifests/` directory
 - **Secrets:** External Secrets Operator → Bitwarden
 
-### Ansible Structure
+### Ansible Structure (Minimal-First Approach)
 
 - **Inventory:** Static YAML with groups for `rpi` (peggy, yelena) and `x86` (xialing)
-- **Roles:**
-  - `common` — SSH hardening, NTP, packages, mounts
-  - `rpi` — cgroups, cmdline.txt tweaks
-  - `rocky` — SELinux, firewalld
-  - `k3s` — K3s install with HA flags, token handling
+- **Playbooks:**
+  - `ping.yml` — Verify connectivity
+  - `k3s.yml` — Install K3s (vanilla, fix issues as they appear)
+- **Philosophy:** Start minimal, debug issues as they arise, document fixes in CONTEXT.md as real ADRs
+- **No pre-emptive hardening:** Skip cgroups tweaks, iptables-legacy, kernel-modules-extra, firewalld rules until something actually breaks
 - **Idempotency:** All tasks must be safe to re-run
 
 ### K3s Configuration
@@ -182,15 +182,11 @@ manifests/
 - Integration tests document expected system state
 - Failed tests should provide actionable diagnostic information
 
-### Ansible Role Tests (Molecule)
+### Ansible Playbook Tests
 
-- Each role tested against containerized targets (Docker)
-- Tests verify:
-  - Package installation
-  - Service configuration
-  - File permissions
-  - Idempotency (second run = no changes)
-- Prior art: None in old repo, but standard Molecule patterns apply
+- Minimal testing: verify playbooks are idempotent (second run = no changes)
+- No Molecule initially — add if roles grow complex enough to warrant it
+- Integration testing against real hardware preferred over containerized mocks
 
 ### Manifest Validation (Pre-commit)
 
@@ -259,13 +255,14 @@ If PXE proves complex, fallback options:
 1. Cloud-init images with autoinstall
 2. Pre-configured SD cards / USB drives via Raspberry Pi Imager
 
-### Phase Ordering
+### Phase Ordering (Minimal-First)
 
-Implementation should follow dependency order:
-1. **Phase 1:** PXE/Ansible (can provision nodes)
-2. **Phase 2:** K3s + Flux + core infra (cluster runs)
-3. **Phase 3:** Multus/macvlan (networking for HA/Omada)
+Implementation follows dependency order, starting minimal and fixing issues as they appear:
+
+1. **Phase 1:** Ansible inventory + SSH (can reach nodes)
+2. **Phase 2:** K3s HA cluster (vanilla install, debug what breaks)
+3. **Phase 3:** Flux + core infra (MetalLB, Longhorn, ESO, Multus — in parallel)
 4. **Phase 4:** Workloads (apps deploy)
 5. **Phase 5:** Backup validation (DR tested)
 
-Each phase should be independently testable before moving to the next.
+Document every fix needed in CONTEXT.md — these become real ADRs based on actual problems, not cargo-culted configs from old playbooks.
