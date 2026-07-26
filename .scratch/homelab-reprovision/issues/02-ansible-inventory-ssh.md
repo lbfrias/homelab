@@ -2,7 +2,7 @@
 
 **What to build:** A minimal Ansible setup that can reach all 3 nodes. Run a ping playbook and get success on peggy, yelena, and xialing.
 
-**Blocked by:** 00 — PXE server for OS provisioning
+**Blocked by:** 00 — PXE server, 01 — Network simplification
 
 **Status:** ready-for-agent
 

@@ -2,7 +2,7 @@
 
 **What to build:** Longhorn as the default StorageClass with backups to the NAS. PVCs provision automatically, and critical data is backed up.
 
-**Blocked by:** 03 — Flux bootstrap
+**Blocked by:** 04 — Flux bootstrap
 
 **Status:** ready-for-agent
 

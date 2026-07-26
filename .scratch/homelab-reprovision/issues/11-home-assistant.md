@@ -2,7 +2,7 @@
 
 **What to build:** Home Assistant running with a macvlan interface on the IoT VLAN for mDNS device discovery.
 
-**Blocked by:** 05 — Longhorn, 06 — External Secrets, 07 — Multus/macvlan
+**Blocked by:** 06 — Longhorn, 07 — External Secrets, 08 — Multus/macvlan
 
 **Status:** ready-for-agent
 

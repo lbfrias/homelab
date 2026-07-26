@@ -2,7 +2,7 @@
 
 **What to build:** Flux installed and reconciling from this repo. The GitOps foundation for all K8s workloads.
 
-**Blocked by:** 02 — K3s HA cluster bootstrap
+**Blocked by:** 03 — K3s HA cluster bootstrap
 
 **Status:** ready-for-agent
 

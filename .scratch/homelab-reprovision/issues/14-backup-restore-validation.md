@@ -2,7 +2,7 @@
 
 **What to build:** A tested, documented restore procedure that proves backups actually work.
 
-**Blocked by:** 05 — Longhorn, 12 — Media stack (need a volume to test with)
+**Blocked by:** 06 — Longhorn, 13 — Media stack (need a volume to test with)
 
 **Status:** ready-for-agent
 

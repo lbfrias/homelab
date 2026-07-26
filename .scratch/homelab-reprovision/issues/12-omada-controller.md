@@ -2,7 +2,7 @@
 
 **What to build:** Omada Controller running with a macvlan interface on the LAN for L2 AP adoption.
 
-**Blocked by:** 05 — Longhorn, 06 — External Secrets, 07 — Multus/macvlan
+**Blocked by:** 06 — Longhorn, 07 — External Secrets, 08 — Multus/macvlan
 
 **Status:** ready-for-agent
 

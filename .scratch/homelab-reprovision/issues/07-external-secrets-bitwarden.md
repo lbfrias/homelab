@@ -2,7 +2,7 @@
 
 **What to build:** ESO pulling secrets from Bitwarden Secrets Manager. Apps can reference ExternalSecrets instead of hardcoding credentials.
 
-**Blocked by:** 03 — Flux bootstrap
+**Blocked by:** 04 — Flux bootstrap
 
 **Status:** ready-for-agent
 

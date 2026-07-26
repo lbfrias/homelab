@@ -2,7 +2,7 @@
 
 **What to build:** A 3-node K3s cluster with all nodes as control plane (HA embedded etcd). Start with vanilla K3s install, debug and fix issues as they appear.
 
-**Blocked by:** 01 — Ansible inventory + SSH access
+**Blocked by:** 02 — Ansible inventory + SSH access
 
 **Status:** ready-for-agent
 

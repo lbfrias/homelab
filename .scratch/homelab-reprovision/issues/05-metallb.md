@@ -2,7 +2,7 @@
 
 **What to build:** MetalLB providing LoadBalancer IPs on the LAN. Services can get stable IPs from the 10.0.0.30-99 pool.
 
-**Blocked by:** 03 — Flux bootstrap
+**Blocked by:** 04 — Flux bootstrap
 
 **Status:** ready-for-agent
 

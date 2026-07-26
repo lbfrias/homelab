@@ -2,7 +2,7 @@
 
 **What to build:** Full media stack deployed: Jellyfin (with hardware transcoding), Radarr, Sonarr, Prowlarr, Bazarr, Transmission, Kavita, Mylar3.
 
-**Blocked by:** 04 — MetalLB, 05 — Longhorn
+**Blocked by:** 05 — MetalLB, 06 — Longhorn
 
 **Status:** ready-for-agent
 

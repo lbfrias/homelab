@@ -2,7 +2,7 @@
 
 **What to build:** PiHole running as the network's DNS server with a stable MetalLB IP.
 
-**Blocked by:** 04 — MetalLB, 05 — Longhorn
+**Blocked by:** 05 — MetalLB, 06 — Longhorn
 
 **Status:** ready-for-agent
 

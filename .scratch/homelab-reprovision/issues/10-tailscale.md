@@ -2,7 +2,7 @@
 
 **What to build:** Tailscale operator running so the cluster is accessible remotely via Tailscale network.
 
-**Blocked by:** 04 — MetalLB, 06 — External Secrets (for auth key)
+**Blocked by:** 05 — MetalLB, 07 — External Secrets (for auth key)
 
 **Status:** ready-for-agent
 

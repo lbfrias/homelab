@@ -2,7 +2,7 @@
 
 **What to build:** Pods can get a secondary interface on the LAN via macvlan. Required for Home Assistant (mDNS) and Omada Controller (AP adoption).
 
-**Blocked by:** 03 — Flux bootstrap
+**Blocked by:** 04 — Flux bootstrap
 
 **Status:** ready-for-agent
 
