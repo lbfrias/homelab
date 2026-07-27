@@ -98,6 +98,34 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 - **No pre-emptive hardening:** Skip cgroups tweaks, iptables-legacy, kernel-modules-extra, firewalld rules until something actually breaks
 - **Idempotency:** All tasks must be safe to re-run
 
+### Package Management
+
+Two-layer approach for idempotent package installation:
+
+1. **Kickstart `%packages`** — Minimal base only (openssh, sudo, vim-minimal, rsync). These are installed during OS provisioning.
+
+2. **Ansible role** — Runtime packages declared in a `packages` variable. When you need a new package on a live cluster:
+   - Add to `ansible/roles/common/defaults/main.yml` (or group/host vars)
+   - Run: `ansible-playbook site.yaml -l xialing --tags packages`
+   - On next full reprovision, Ansible installs it idempotently
+
+This keeps Kickstart lean and makes package management a normal Ansible operation.
+
+### Disk Partitioning (xialing)
+
+Optimized for k3s workloads on a 120GB SSD:
+
+| Partition | Size | Purpose |
+|-----------|------|---------|
+| /boot/efi | 600MB | UEFI boot |
+| /boot | 1GB | Kernel images |
+| / (root) | 30GB | OS, binaries |
+| /var | ~75GB | K3s images, containers, etcd, logs |
+| /home | 5GB | User dotfiles (minimal, no user data) |
+| swap | 4GB | Swap space |
+
+User data lives on the 4TB USB HDD mounted at `/mnt/data`.
+
 ### K3s Configuration
 
 - All 3 nodes as control plane (embedded etcd, quorum of 2)

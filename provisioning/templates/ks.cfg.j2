@@ -44,10 +44,11 @@ part pv.01 --fstype=lvmpv --size=1 --grow --ondisk=sda
 # Volume Group
 volgroup rl pv.01 --pesize=4096
 
-# Logical Volumes — sized for 120GB SSD
-logvol / --fstype=ext4 --name=root --vgname=rl --size=50000
-logvol /var --fstype=ext4 --name=var --vgname=rl --size=40000
-logvol /home --fstype=ext4 --name=home --vgname=rl --size=10000 --grow
+# Logical Volumes — optimized for k3s workloads on 120GB SSD
+# /var gets most space for container images, etcd, logs
+logvol / --fstype=ext4 --name=root --vgname=rl --size=30000
+logvol /var --fstype=ext4 --name=var --vgname=rl --size=1 --grow
+logvol /home --fstype=ext4 --name=home --vgname=rl --size=5000
 logvol swap --fstype=swap --name=swap --vgname=rl --size=4096
 
 #---------- Bootloader ----------
