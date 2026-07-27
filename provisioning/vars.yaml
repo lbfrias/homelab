@@ -2,8 +2,10 @@
 # Sensitive values go in vars.local.yaml (see vars.local.example.yaml)
 
 # OS image versions (downloaded automatically)
-# Use directory date from https://downloads.raspberrypi.com/raspios_lite_arm64/images/
+# RPi: Use directory date from https://downloads.raspberrypi.com/raspios_lite_arm64/images/
+# Rocky: https://download.rockylinux.org/pub/rocky/10/isos/x86_64/
 raspios_version: "2026-06-19"
+rocky_major_version: "10"
 
 nodes:
   - name: peggy

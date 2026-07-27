@@ -28,7 +28,7 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 ## User Stories
 
-1. As a homelab operator, I want to boot a fresh node from PXE, so that I don't need to manually flash SD cards or USB drives.
+1. As a homelab operator, I want to flash OS images with cloud-init configs, so that nodes are ready for Ansible on first boot without manual setup.
 
 2. As a homelab operator, I want a single Ansible command to configure all nodes, so that I can reprovision without remembering manual steps.
 
@@ -82,7 +82,8 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 ### Provisioning Stack Layers
 
-- **OS install:** PXE boot via Docker container on desktop (proxy DHCP mode)
+- **OS install (RPi):** SD card with cloud-init (peggy, yelena)
+- **OS install (x86):** USB installer with Kickstart (xialing — internal SSD)
 - **Node config:** Ansible with roles for common, k3s, and OS-specific tasks
 - **K8s workloads:** Flux GitOps watching `manifests/` directory
 - **Secrets:** External Secrets Operator → Bitwarden
@@ -249,11 +250,19 @@ The `homelab-ansible` repo contains working manifests to migrate:
 - `manifests/tailscale/` — Tailscale operator
 - `k3s-setup/` — K3s installation playbook (adapt, don't copy verbatim)
 
-### PXE Boot Fallback
+### PXE Boot (Removed)
 
-If PXE proves complex, fallback options:
-1. Cloud-init images with autoinstall
-2. Pre-configured SD cards / USB drives via Raspberry Pi Imager
+Originally considered PXE boot for full automation, but decided physical media is simpler for a 3-node cluster. PXE adds complexity (DHCP proxy, boot server) without significant benefit at this scale.
+
+### Kickstart for x86 Nodes
+
+xialing has an internal SSD that can't be flashed from the desktop. Instead, boot from USB installer with Kickstart config for automated install:
+- Partitions internal SSD
+- Creates user with SSH key
+- Sets hostname
+- Reboots ready for Ansible
+
+Kickstart config lives in `provisioning/templates/ks.cfg.j2` alongside cloud-init templates.
 
 ### Phase Ordering (Minimal-First)
 

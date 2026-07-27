@@ -107,18 +107,21 @@ This document captures the shared understanding and key decisions for this homel
 - Already using Bitwarden
 - Others can use their own secret store or create manually
 
-### ADR-007: PXE Boot for OS Provisioning
+### ADR-007: Physical Media Provisioning (Cloud-init + Kickstart)
 
 **Status:** Accepted
 
 **Context:** How to install OS on nodes for full automation.
 
-**Decision:** PXE boot via Docker on desktop (proxy DHCP). Fallback: cloud-init images, then physical media.
+**Decision:** Physical media with automated first-boot config. Different mechanisms per hardware:
+- **RPi (peggy, yelena):** SD card with Raspberry Pi OS + cloud-init
+- **x86 (xialing):** USB installer with Rocky Linux + Kickstart (internal SSD)
 
 **Rationale:**
-- Desktop on same VLAN as servers
-- Proxy DHCP works alongside Omada DHCP
-- Maximum automation for reprovision
+- Simpler than PXE (no DHCP proxy, no boot server)
+- RPi: cloud-init embedded in boot partition works well
+- x86: internal SSD can't be flashed from desktop; USB installer + Kickstart automates install
+- Both achieve same outcome: boot → Ansible-ready
 
 ### ADR-008: Hybrid Upgrade Strategy
 
@@ -137,7 +140,8 @@ This document captures the shared understanding and key decisions for this homel
 
 | Layer | Tool |
 |-------|------|
-| OS install | PXE boot (Docker on desktop) |
+| OS install (RPi) | SD card + cloud-init |
+| OS install (x86) | USB installer + Kickstart |
 | Node config | Ansible |
 | K8s workloads | Flux (GitOps) |
 | Secrets | External Secrets Operator → Bitwarden |

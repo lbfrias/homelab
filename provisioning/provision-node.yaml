@@ -1,6 +1,8 @@
 ---
 # Provision a single node
-# Usage: ansible-playbook provision-node.yaml -e @vars.local.yaml -e node=peggy -e device=/dev/sdd
+# Usage:
+#   RPi:   ansible-playbook provision-node.yaml -e @vars.local.yaml -e node=peggy -e device=/dev/sdd
+#   Rocky: ansible-playbook provision-node.yaml -e @vars.local.yaml -e node=xialing -e device=/dev/sdd
 
 - name: Provision node
   hosts: localhost
@@ -11,6 +13,7 @@
 
   vars:
     raspios_dir_url: "https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-{{ raspios_version }}/"
+    rocky_dir_url: "https://download.rockylinux.org/pub/rocky/{{ rocky_major_version }}/isos/x86_64/"
 
   tasks:
     # Validate inputs
@@ -44,13 +47,21 @@
       failed_when: false
       changed_when: false
 
+    - name: Check for docker (Rocky)
+      command: which docker
+      register: docker_check
+      failed_when: false
+      changed_when: false
+      when: target_node.os == 'rocky'
+
     - name: Collect missing commands
       set_fact:
         missing_commands: >-
           {{
             ([] +
               (['rpi-imager'] if (target_node.os == 'raspios' and rpi_imager_check.rc != 0) else []) +
-              (['wipefs'] if wipefs_check.rc != 0 else []))
+              (['wipefs'] if wipefs_check.rc != 0 else []) +
+              (['docker'] if (target_node.os == 'rocky' and docker_check.rc != 0) else []))
           }}
 
     - name: Fail if required commands missing
@@ -58,20 +69,23 @@
         msg: "Missing required commands: {{ missing_commands | join(', ') }}. Please install them before running."
       when: missing_commands | length > 0
 
-    # Generate cloud-init for this node
+    # Create output directory
     - name: Create output directory
       file:
         path: "{{ playbook_dir }}/output/{{ node }}"
         state: directory
 
-    - name: Generate user-data
+    #==========================================================================
+    # RASPBERRY PI OS (cloud-init)
+    #==========================================================================
+    - name: Generate user-data (RPi)
       template:
         src: templates/user-data.j2
         dest: "{{ playbook_dir }}/output/{{ node }}/user-data"
       vars:
         item: "{{ target_node }}"
+      when: target_node.os == 'raspios'
 
-    # Download and flash (raspios)
     - name: Discover RPi OS image filename
       uri:
         url: "{{ raspios_dir_url }}"
@@ -119,6 +133,128 @@
       become: true
       when: target_node.os == 'raspios'
 
-    - name: Flash complete
+    #==========================================================================
+    # ROCKY LINUX (Kickstart)
+    #==========================================================================
+    - name: Generate kickstart config (Rocky)
+      template:
+        src: templates/ks.cfg.j2
+        dest: "{{ playbook_dir }}/output/{{ node }}/ks.cfg"
+      vars:
+        item: "{{ target_node }}"
+      when: target_node.os == 'rocky'
+
+    - name: Discover Rocky ISO filename
+      uri:
+        url: "{{ rocky_dir_url }}"
+        return_content: true
+      register: rocky_dir_listing
+      when: target_node.os == 'rocky'
+
+    - name: Extract Rocky ISO filename from directory listing
+      set_fact:
+        rocky_filename: "{{ rocky_dir_listing.content | regex_search('(Rocky-[0-9.]+-x86_64-minimal\\.iso)') }}"
+      when: target_node.os == 'rocky'
+
+    - name: Validate Rocky ISO filename found
+      assert:
+        that: rocky_filename | length > 0
+        fail_msg: "Could not find minimal ISO in {{ rocky_dir_url }}"
+      when: target_node.os == 'rocky'
+
+    - name: Set Rocky ISO paths
+      set_fact:
+        rocky_iso_url: "{{ rocky_dir_url }}{{ rocky_filename }}"
+        rocky_iso_path: "/tmp/{{ rocky_filename }}"
+      when: target_node.os == 'rocky'
+
+    - name: Download Rocky Linux ISO
+      get_url:
+        url: "{{ rocky_iso_url }}"
+        dest: "{{ rocky_iso_path }}"
+        mode: '0644'
+      when: target_node.os == 'rocky'
+
+    - name: Create custom ISO with embedded kickstart (via Docker)
+      # --ks adds kickstart and auto-appends inst.ks to kernel cmdline
+      # --replace fixes GRUB: timeout 60->1s, default "1"->"0" (Install, not Test media)
+      # --skip-mkefiboot: EFI partition patched separately after dd (mkksiso bug workaround)
+      command: >
+        docker run --rm
+        -v {{ playbook_dir }}/output/{{ node }}:/work
+        -v {{ rocky_iso_path }}:/Rocky.iso:ro
+        fedora:latest
+        sh -c "dnf install -y lorax >/dev/null 2>&1 && mkksiso --skip-mkefiboot --ks /work/ks.cfg -R 'set timeout=60' 'set timeout=1' -R 'set default=\"1\"' 'set default=\"0\"' /Rocky.iso /work/Rocky-{{ node }}.iso"
+      when: target_node.os == 'rocky'
+
+    - name: Write ISO to USB
+      command: >
+        dd if={{ playbook_dir }}/output/{{ node }}/Rocky-{{ node }}.iso
+        of={{ device }} bs=4M status=progress oflag=sync
+      become: true
+      when: target_node.os == 'rocky'
+
+    # mkksiso bug: efiboot.img updates don't propagate to the appended EFI partition
+    # that UEFI firmware actually reads. Workaround: patch USB EFI partition directly.
+    # See: https://forums.rockylinux.org/t/problems-using-mkksiso-cmdline/19515/2
+    - name: Patch USB EFI partition with correct grub.cfg (Rocky)
+      block:
+        - name: Create temp mount points
+          file:
+            path: "{{ item }}"
+            state: directory
+          loop:
+            - /tmp/iso-mount
+            - /tmp/usb-efi
+
+        - name: Mount ISO to extract correct grub.cfg
+          mount:
+            path: /tmp/iso-mount
+            src: "{{ playbook_dir }}/output/{{ node }}/Rocky-{{ node }}.iso"
+            fstype: iso9660
+            opts: loop,ro
+            state: mounted
+
+        - name: Mount USB EFI partition
+          mount:
+            path: /tmp/usb-efi
+            src: "{{ device }}2"
+            fstype: vfat
+            state: mounted
+
+        - name: Copy correct grub.cfg to USB EFI partition
+          copy:
+            src: /tmp/iso-mount/EFI/BOOT/grub.cfg
+            dest: /tmp/usb-efi/EFI/BOOT/grub.cfg
+            remote_src: true
+
+        - name: Unmount USB EFI partition
+          mount:
+            path: /tmp/usb-efi
+            state: unmounted
+
+        - name: Unmount ISO
+          mount:
+            path: /tmp/iso-mount
+            state: unmounted
+      become: true
+      when: target_node.os == 'rocky'
+
+    #==========================================================================
+    # DONE
+    #==========================================================================
+    - name: Flash complete (RPi)
       debug:
         msg: "{{ node }} flashed to {{ device }}. Remove SD card and boot."
+      when: target_node.os == 'raspios'
+
+    - name: Flash complete (Rocky)
+      debug:
+        msg: |
+          {{ node }} USB installer ready on {{ device }}.
+          
+          Boot xialing from USB:
+          1. Insert USB and boot from it
+          2. Installation runs unattended (packages pulled from network)
+          3. After reboot, SSH: ssh -p {{ ssh_port }} {{ username }}@<ip>
+      when: target_node.os == 'rocky'

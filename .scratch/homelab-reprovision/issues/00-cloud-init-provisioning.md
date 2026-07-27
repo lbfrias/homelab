@@ -1,45 +1,44 @@
-# 00 — OS provisioning via cloud-init
+# 00 — OS provisioning via cloud-init and Kickstart
 
-**What to build:** Flash OS images with cloud-init configs so all nodes are ready for Ansible on first boot. No PXE server needed.
+**What to build:** Flash OS images with automated first-boot configs so all nodes are ready for Ansible on first boot.
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Workflow
 
-1. Download OS images (Raspberry Pi OS Lite, Rocky Linux cloud image)
-2. Flash to media (SD cards for Pis, USB/SSD for xialing)
+### Raspberry Pi (cloud-init)
+1. Download Raspberry Pi OS Lite image
+2. Flash to SD card via `rpi-imager`
 3. Add cloud-init files to boot partition
-4. Boot nodes — cloud-init configures user, SSH keys, hostname
+4. Boot node — cloud-init configures user, SSH keys, hostname, HDD /var mount
 5. Ansible can connect immediately
+
+### Rocky Linux (Kickstart)
+1. Download Rocky Linux 10 installer ISO
+2. Write ISO to USB drive
+3. Add Kickstart config (ks.cfg) to USB
+4. Boot xialing from USB with Kickstart parameter
+5. Installer runs unattended, writes to internal SSD
+6. Reboot — Ansible can connect immediately
 
 ## Acceptance Criteria
 
-### Raspberry Pi (peggy, yelena)
-- [ ] Download Raspberry Pi OS Lite 64-bit image
-- [ ] Flash to SD cards
-- [ ] Add `user-data` and `meta-data` to boot partition for each node
-- [ ] Configure: hostname, user, SSH authorized key, passwordless sudo
-- [ ] Verify: Boot peggy, SSH in with key after ~2 min
-- [ ] Verify: Boot yelena, SSH in with key after ~2 min
+### Raspberry Pi (peggy, yelena) — ✅ DONE
+- [x] Download Raspberry Pi OS Lite 64-bit image
+- [x] Flash to SD cards via playbook
+- [x] Add `user-data` and `meta-data` to boot partition for each node
+- [x] Configure: hostname, user, SSH authorized key, passwordless sudo, HDD /var mount
+- [x] Verify: Boot peggy, SSH in with key
+- [x] Verify: Boot yelena, SSH in with key
+- [x] Verify: HDD mounted as /var on both nodes
 
-### Rocky Linux (xialing)
-- [ ] Download Rocky Linux 10 cloud image (GenericCloud)
-- [ ] Flash to USB or SSD
-- [ ] Add cloud-init config (NoCloud datasource)
-- [ ] Configure: hostname, user, SSH authorized key, passwordless sudo
-- [ ] Verify: Boot xialing, SSH in with key
-
-## cloud-init template
-
-```yaml
-#cloud-config
-hostname: <nodename>
-users:
-  - name: <username>
-    ssh_authorized_keys:
-      - <your-ssh-public-key>
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    lock_passwd: true
-```
+### Rocky Linux (xialing) — TODO
+- [ ] Download Rocky Linux 10 installer ISO
+- [ ] Create Kickstart template (ks.cfg.j2)
+- [ ] Configure: partitioning, hostname, user, SSH authorized key, passwordless sudo
+- [ ] Write ISO + ks.cfg to USB drive (playbook or manual)
+- [ ] Boot xialing from USB with `inst.ks=...`
+- [ ] Verify: Install completes unattended
+- [ ] Verify: SSH in with key after reboot
