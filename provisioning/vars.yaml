@@ -1,0 +1,14 @@
+# Provisioning Variables — Infrastructure
+# Sensitive values go in vars.local.yaml (see vars.local.example.yaml)
+
+# OS image versions (downloaded automatically)
+# Use directory date from https://downloads.raspberrypi.com/raspios_lite_arm64/images/
+raspios_version: "2026-06-19"
+
+nodes:
+  - name: peggy
+    os: raspios
+  - name: yelena
+    os: raspios
+  - name: xialing
+    os: rocky
