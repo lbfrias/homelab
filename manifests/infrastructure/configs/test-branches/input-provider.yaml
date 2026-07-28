@@ -1,0 +1,18 @@
+---
+# Scan for test/* branches in the homelab repo
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSetInputProvider
+metadata:
+  name: test-branches
+  namespace: flux-system
+  annotations:
+    # Check for new branches every 5 minutes
+    fluxcd.controlplane.io/reconcileEvery: "5m"
+spec:
+  type: GitHubBranch
+  url: https://github.com/lbfrias/homelab
+  # No secretRef needed for public repos (uses unauthenticated GitHub API)
+  # Add secretRef if you hit rate limits (60 req/hr unauthenticated)
+  filter:
+    # Match branches like test/jellyfin, test/metallb, etc.
+    includeBranch: "^test/.*"

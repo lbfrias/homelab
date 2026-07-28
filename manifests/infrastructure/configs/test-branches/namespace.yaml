@@ -1,0 +1,6 @@
+---
+# Namespace for test branch deployments
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test

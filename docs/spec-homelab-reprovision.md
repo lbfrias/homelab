@@ -36,7 +36,9 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 4. As a homelab operator, I want Flux to manage all K8s workloads, so that the cluster self-heals from drift.
 
-5. As a homelab operator, I want MetalLB providing LoadBalancer IPs, so that services are accessible on the LAN.
+5. As a homelab operator, I want to test new workloads on `test/*` branches before merging to main, so that I can validate changes without affecting production.
+
+6. As a homelab operator, I want MetalLB providing LoadBalancer IPs, so that services are accessible on the LAN.
 
 6. As a homelab operator, I want Longhorn for persistent storage, so that app data survives pod rescheduling.
 
@@ -142,12 +144,10 @@ User data lives on the 4TB USB HDD mounted at `/mnt/data`.
 
 ```
 manifests/
-├── clusters/
-│   └── homelab/
-│       └── flux-system/     # Flux bootstrap
+├── flux-system/             # Flux bootstrap (auto-generated)
 ├── infrastructure/
-│   ├── controllers/         # MetalLB, Longhorn, ESO, Multus
-│   └── configs/             # MetalLB pools, NADs, ClusterSecretStore
+│   ├── controllers/         # MetalLB, Longhorn, ESO, Multus, Flux Operator
+│   └── configs/             # MetalLB pools, NADs, ClusterSecretStore, ResourceSet
 └── apps/
     ├── media/               # Jellyfin, *arr stack
     ├── network/             # PiHole, Tailscale, Omada
@@ -156,6 +156,27 @@ manifests/
 
 - Kustomizations with dependencies ensure correct ordering
 - Infrastructure deploys before apps
+
+### Flux Operator + Dynamic Test Branches
+
+The Flux Operator extends base Flux with ResourceSet and ResourceSetInputProvider CRDs, enabling automatic deployment from `test/*` branches:
+
+**Workflow:**
+1. Push to `test/my-feature` branch
+2. ResourceSetInputProvider detects the branch (via GitHub API)
+3. ResourceSet templates a GitRepository + Kustomization for that branch
+4. Flux deploys the branch's manifests to the `test` namespace
+5. Delete the branch → resources are pruned automatically
+
+**Components:**
+- **Flux Operator:** Installed via HelmRelease in `infrastructure/controllers/`
+- **ResourceSetInputProvider:** Watches `test/*` branches in `lbfrias/homelab`
+- **ResourceSet:** Templates GitRepository + Kustomization per branch, targets `test` namespace
+
+**Benefits:**
+- Test new workloads in isolation before merging to main
+- No manual resource creation/deletion
+- Branch deletion auto-cleans test resources
 
 ### Multus + Macvlan Networking
 
@@ -307,6 +328,7 @@ Implementation follows the five-step provisioning model:
 | 2 | **Bootstrap** | `ansible-playbook playbooks/bootstrap.yaml` | Packages, kernel modules, sysctl, NFS/SMB |
 | 3 | **K3s** | `ansible-playbook playbooks/k3s.yaml` | HA cluster with embedded etcd |
 | 4 | **Flux** | `ansible-playbook playbooks/flux.yaml` | GitOps bootstrap |
+| 4.1 | **Flux Operator** | Flux reconciles `manifests/infrastructure/controllers/` | ResourceSet for test branches |
 | 5 | **Services** | Automatic (Flux reconciles `manifests/`) | Infrastructure and apps deploy |
 
 Document every fix needed in CONTEXT.md — these become real ADRs based on actual problems, not cargo-culted configs from old playbooks.

@@ -1,0 +1,53 @@
+---
+# Generate GitRepository + Kustomization for each test/* branch
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: test-deployments
+  namespace: flux-system
+spec:
+  inputsFrom:
+    - apiVersion: fluxcd.controlplane.io/v1
+      kind: ResourceSetInputProvider
+      name: test-branches
+  resources:
+    # GitRepository tracking the test branch
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      metadata:
+        name: test-<< inputs.id >>
+        namespace: flux-system
+      spec:
+        interval: 1m
+        url: https://github.com/lbfrias/homelab
+        ref:
+          branch: << inputs.branch >>
+        secretRef:
+          name: flux-system
+
+    # Kustomization deploying manifests from the branch to test namespace
+    - apiVersion: kustomize.toolkit.fluxcd.io/v1
+      kind: Kustomization
+      metadata:
+        name: test-<< inputs.id >>
+        namespace: flux-system
+        annotations:
+          # Metadata for tracking
+          fluxcd.controlplane.io/branch: << inputs.branch | quote >>
+          fluxcd.controlplane.io/commit: << inputs.sha | quote >>
+      spec:
+        interval: 5m
+        sourceRef:
+          kind: GitRepository
+          name: test-<< inputs.id >>
+        path: ./manifests
+        prune: true
+        targetNamespace: test
+        # Force resources into test namespace
+        patches:
+          - patch: |
+              - op: replace
+                path: /metadata/namespace
+                value: test
+            target:
+              labelSelector: "app.kubernetes.io/part-of!=flux"

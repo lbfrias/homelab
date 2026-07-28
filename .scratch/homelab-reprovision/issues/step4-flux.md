@@ -12,7 +12,7 @@
 
 - [x] Create Flux directory structure under `manifests/`
 - [x] Create `ansible/playbooks/flux.yaml` (Step 4 playbook)
-- [ ] Add `github_token`, `github_owner`, `github_repo` to `vars.local.yaml`
-- [ ] Run playbook to bootstrap Flux
-- [ ] Verify: `flux get all` shows healthy reconciliation
+- [x] Add `github_token`, `github_owner`, `github_repo` to `vars.local.yaml`
+- [x] Run playbook to bootstrap Flux
+- [x] Verify: `flux get all` shows healthy reconciliation
 - [ ] Verify: Changes pushed to repo are automatically applied

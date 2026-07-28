@@ -1,0 +1,37 @@
+---
+# Kustomization for infrastructure controllers (MetalLB, Longhorn, Flux Operator, etc.)
+# These install CRDs and operators that other resources depend on
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infrastructure-controllers
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./manifests/infrastructure/controllers
+  prune: true
+  wait: true
+---
+# Kustomization for infrastructure configs (depends on controllers)
+# These create resources using CRDs from controllers
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infrastructure-configs
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./manifests/infrastructure/configs
+  prune: true
+  dependsOn:
+    - name: infrastructure-controllers
