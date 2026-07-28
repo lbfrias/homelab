@@ -16,9 +16,8 @@ ntp:
     - {{ server }}
 {% endfor %}
 
-# Update packages on first boot
-package_update: true
-package_upgrade: true
+# NOTE: No package_update/package_upgrade here. Ansible handles packages
+# after /var migration to avoid corrupting dpkg state.
 
 users:
   - name: {{ username }}
@@ -38,87 +37,26 @@ write_files:
       Port {{ ssh_port }}
     owner: root:root
     permissions: '0644'
-{% if item.os == 'raspios' %}
-  - path: /usr/local/bin/setup-var-hdd.sh
-    content: |
-      #!/bin/bash
-      # Move /var to attached HDD to reduce SD card wear
-      set -euo pipefail
-
-      MARKER="/var/.hdd-mounted"
-      if [[ -f "$MARKER" ]]; then
-        echo "HDD already mounted at /var, skipping"
-        exit 0
-      fi
-
-      # Find first non-mmcblk block device (the attached HDD)
-      HDD_DEV=""
-      for dev in /sys/block/sd*; do
-        if [[ -e "$dev" ]]; then
-          HDD_DEV="/dev/$(basename $dev)"
-          break
-        fi
-      done
-
-      if [[ -z "$HDD_DEV" ]]; then
-        echo "ERROR: No HDD found (expected /dev/sd*)"
-        exit 1
-      fi
-
-      echo "Found HDD: $HDD_DEV"
-
-      # Partition if no partition exists
-      if ! lsblk -n "${HDD_DEV}1" &>/dev/null; then
-        echo "Partitioning $HDD_DEV..."
-        parted -s "$HDD_DEV" mklabel gpt
-        parted -s "$HDD_DEV" mkpart primary ext4 0% 100%
-        sleep 2  # Wait for partition to appear
-      fi
-
-      PART="${HDD_DEV}1"
-
-      # Format if not already ext4
-      if ! blkid -s TYPE -o value "$PART" 2>/dev/null | grep -q ext4; then
-        echo "Formatting $PART as ext4..."
-        mkfs.ext4 -F "$PART"
-      fi
-
-      # Get UUID for fstab
-      UUID=$(blkid -s UUID -o value "$PART")
-      echo "Partition UUID: $UUID"
-
-      # Mount temporarily and copy /var contents
-      TEMP_MOUNT="/mnt/var-hdd"
-      mkdir -p "$TEMP_MOUNT"
-      mount "$PART" "$TEMP_MOUNT"
-
-      # Only copy if target is empty
-      if [[ ! -d "$TEMP_MOUNT/log" ]]; then
-        echo "Copying /var to HDD..."
-        rsync -aAXv /var/ "$TEMP_MOUNT/"
-      fi
-
-      umount "$TEMP_MOUNT"
-      rmdir "$TEMP_MOUNT"
-
-      # Add to fstab if not already present
-      if ! grep -q "$UUID" /etc/fstab; then
-        echo "UUID=$UUID /var ext4 defaults,noatime 0 2" >> /etc/fstab
-      fi
-
-      # Mount the new /var
-      mount /var
-
-      # Create marker to indicate HDD is mounted
-      touch "$MARKER"
-
-      echo "/var successfully moved to HDD ($PART)"
-    owner: root:root
-    permissions: '0755'
-{% endif %}
 
 runcmd:
   - systemctl restart sshd
 {% if item.os == 'raspios' %}
-  - /usr/local/bin/setup-var-hdd.sh
+  # Migrate /var to attached HDD
+  - |
+    set -e
+    # Wipe, partition, and format
+    wipefs -a /dev/sda
+    parted -s /dev/sda mklabel gpt mkpart primary ext4 0% 100%
+    sleep 2
+    mkfs.ext4 -F /dev/sda1
+    # Mount and copy
+    mkdir -p /tmp/var-hdd
+    mount /dev/sda1 /tmp/var-hdd
+    rsync -aAX /var/ /tmp/var-hdd/
+    umount /tmp/var-hdd
+    # Add to fstab with UUID
+    UUID=$(blkid -s UUID -o value /dev/sda1)
+    echo "UUID=$UUID /var ext4 defaults,noatime 0 2" >> /etc/fstab
+    echo "/var migration complete. Rebooting..."
+    reboot
 {% endif %}

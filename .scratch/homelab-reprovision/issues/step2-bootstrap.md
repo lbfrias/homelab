@@ -6,16 +6,19 @@
 
 **Blocked by:** Step 1 (Provision)
 
-**Status:** in progress (blocked on Step 1 RPi fix)
+**Status:** done
 
 ## What bootstrap.yaml does
 
 1. Update package cache (apt/dnf)
-2. Install OS-specific packages first (epel-release on Rocky)
-3. Install common packages: `curl`, `vim`, `jq`, `glances`
-4. Run `nfs_smb` role on xialing
+2. **Upgrade all packages** (deferred from cloud-init to avoid dpkg corruption during /var migration)
+3. Install OS-specific packages first (epel-release on Rocky, glances on Debian)
+4. Install common packages: `curl`, `vim`, `jq`
+5. Run `nfs_smb` role on xialing
 
 **Note:** K3s prerequisites (kernel modules, sysctl, firewalld, cgroup) moved to `k3s.yaml` — they belong with K3s setup, not general bootstrap.
+
+**Note:** Package update/upgrade must happen here, not in cloud-init. On RPis, cloud-init runs before /var migration completes — running apt before the migration corrupts dpkg state.
 
 ## Tasks
 
@@ -24,14 +27,15 @@
 - [x] Create `ansible/playbooks/ping.yaml` for connectivity check
 - [x] Create `ansible/roles/common/` — minimal, just package cache + packages
 - [x] Create `ansible/playbooks/bootstrap.yaml`
-- [x] Packages: curl, vim, jq, glances (epel-release first on Rocky)
+- [x] Packages: curl, vim, jq (glances on Debian only — not in EPEL for Rocky 10)
 - [x] Run `nfs_smb` role on xialing
-- [ ] Verify: bootstrap.yaml succeeds on all nodes (blocked on Step 1)
-- [ ] Verify: NFS export accessible from cluster nodes
-- [ ] Verify: SMB share accessible
+- [x] Verify: bootstrap.yaml succeeds on all nodes
+- [x] Verify: NFS export accessible from cluster nodes
+- [x] Verify: SMB share accessible
 
 ## Refactoring done
 
 - Moved K3s prereqs (kernel modules, sysctl, firewalld, cgroup) from bootstrap.yaml to k3s.yaml
 - Stripped common role to minimal: package cache + essential packages only
 - Removed package installs from cloud-init — Ansible handles all packages now
+- Updated common role to use `ansible_facts['os_family']` syntax (fixes deprecation warnings)

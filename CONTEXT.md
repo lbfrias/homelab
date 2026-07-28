@@ -136,15 +136,45 @@ This document captures the shared understanding and key decisions for this homel
 - Major upgrades risk drift — reprovision ensures clean state
 - If automation is solid, reprovision is fast
 
-## Provisioning Stack
+## Five-Step Provisioning Model
 
-| Layer | Tool |
-|-------|------|
-| OS install (RPi) | SD card + cloud-init |
-| OS install (x86) | USB installer + Kickstart |
-| Node config | Ansible |
-| K8s workloads | Flux (GitOps) |
-| Secrets | External Secrets Operator → Bitwarden |
+| Step | Name | Tool | Command |
+|------|------|------|---------|
+| 1 | **Provision** | cloud-init / Kickstart | Flash media, boot node |
+| 2 | **Bootstrap** | Ansible | `ansible-playbook playbooks/bootstrap.yaml` |
+| 3 | **K3s** | Ansible | `ansible-playbook playbooks/k3s.yaml` |
+| 4 | **Flux** | Ansible | `ansible-playbook playbooks/flux.yaml` |
+| 5 | **Services** | Flux | Automatic (GitOps reconciles `manifests/`) |
+
+### Step Details
+
+**Step 1 — Provision:** OS installation via physical media
+- RPi: SD card with Raspberry Pi OS + cloud-init
+- x86: USB installer with Rocky Linux + Kickstart
+- Output: Nodes boot with SSH access, ready for Ansible
+
+**Step 2 — Bootstrap:** Package installation and OS prerequisites
+- Updates system packages
+- Installs common tools (htop, vim, etc.)
+- Configures kernel modules and sysctl for K8s
+- Configures NFS/SMB on xialing
+- Output: Nodes ready for K3s installation
+
+**Step 3 — K3s:** Kubernetes cluster bootstrap
+- Installs K3s in HA mode (embedded etcd)
+- xialing: `--cluster-init` (first server)
+- peggy, yelena: join via xialing
+- Output: 3-node K3s cluster with kubeconfig
+
+**Step 4 — Flux:** GitOps bootstrap
+- Installs Flux on the cluster
+- Configures GitHub source and kustomization
+- Output: Flux watching `manifests/` directory
+
+**Step 5 — Services:** Application deployment (automatic)
+- Flux reconciles infrastructure (MetalLB, Longhorn, ESO, Multus)
+- Flux reconciles apps (media stack, networking, home automation)
+- Output: All workloads running
 
 ## K3s Prerequisites
 
@@ -212,19 +242,34 @@ Platform-specific requirements discovered during cluster bootstrap:
 
 ```
 homelab/
-├── ansible/              # Node provisioning
+├── ansible/
 │   ├── inventory/
+│   │   └── hosts.yaml           # Static inventory (rpi, x86, k3s_cluster groups)
 │   ├── playbooks/
+│   │   ├── bootstrap.yaml       # Step 2: packages + prerequisites
+│   │   ├── k3s.yaml             # Step 3: K3s cluster setup
+│   │   └── flux.yaml            # Step 4: Flux GitOps bootstrap
+│   ├── provisioning/            # Step 1: OS install configs
+│   │   └── templates/           # cloud-init and kickstart templates
 │   └── roles/
-├── manifests/            # K8s workloads (Flux watches)
-│   ├── flux-system/
+│       ├── common/              # Shared tasks (packages, sysctl, modules)
+│       ├── nfs_smb/             # NFS/SMB server (xialing only)
+│       └── prereqs/             # OS-specific K8s prerequisites
+├── manifests/                   # Step 5: K8s workloads (Flux watches)
+│   ├── clusters/
+│   │   └── homelab/
+│   │       └── flux-system/
 │   ├── infrastructure/
+│   │   ├── controllers/         # MetalLB, Longhorn, ESO, Multus
+│   │   └── configs/             # Pools, NADs, ClusterSecretStore
 │   └── apps/
-├── docs/                 # Architecture, guides
-│   ├── networking.md
+│       ├── media/               # Jellyfin, *arr stack
+│       ├── network/             # PiHole, Tailscale, Omada
+│       └── home/                # Home Assistant
+├── docs/
 │   ├── restore-guide.md
 │   └── secrets.md
-├── CONTEXT.md            # This file
+├── CONTEXT.md                   # This file
 └── README.md
 ```
 
@@ -241,3 +286,7 @@ homelab/
 ## Conventions
 
 - **YAML files:** Use `.yaml` extension (not `.yml`)
+- **Sensitive values:** Never commit secrets. Use `vars.local.yaml` (gitignored) for sensitive data:
+  - Copy from `vars.local.example.yaml` as template
+  - Pass to playbooks via `-e @vars.local.yaml`
+  - Includes: SSH credentials, node IPs, GitHub tokens, SMB passwords

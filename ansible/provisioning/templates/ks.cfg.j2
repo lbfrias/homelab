@@ -12,7 +12,12 @@ url --url="https://download.rockylinux.org/pub/rocky/10/BaseOS/x86_64/os/"
 #---------- Locale & Keyboard ----------
 lang {{ locale }}
 keyboard --xlayouts='{{ keyboard_layout }}'
-timezone {{ timezone }} --utc --ntpservers={{ ntp_servers | join(',') }}
+timezone {{ timezone }} --utc
+
+#---------- NTP Time Sources (RHEL 10+ syntax) ----------
+{% for server in ntp_servers %}
+timesource --ntp-server={{ server }}
+{% endfor %}
 
 #---------- Network ----------
 network --bootproto=dhcp --device=link --activate --onboot=yes
@@ -103,14 +108,16 @@ fi
 firewall-offline-cmd --add-port={{ ssh_port }}/tcp
 
 #---------- NAS Drive Mount (4TB USB HDD as RAID1 degraded) ----------
-# Create mount point and add fstab entry for existing RAID array
+# Create mount point for existing RAID array
 mkdir -p /mnt/data
 
-# Add fstab entry for md0 (RAID array assembles automatically via mdadm)
-cat >> /etc/fstab << 'FSTAB'
+# Add fstab entry for md0 only if not already present (idempotent)
+if ! grep -q '/dev/md0' /etc/fstab; then
+  cat >> /etc/fstab << 'FSTAB'
 # NAS storage - 4TB USB HDD (RAID1 degraded)
 /dev/md0 /mnt/data xfs defaults,noatime,nofail 0 2
 FSTAB
+fi
 
 %end
 

@@ -2,7 +2,10 @@
 # Copy to vars.local.yaml and fill in your values
 #
 # Usage (from ansible/ dir):
+#   ansible-playbook -e @vars.local.yaml site.yaml
+#   ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml
 #   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
+#   ansible-playbook -e @vars.local.yaml playbooks/flux.yaml
 
 # --- SSH & User Configuration ---
 username: myuser
@@ -24,3 +27,8 @@ nfs_export_network: "10.0.0.0/24"
 
 # --- SMB Configuration ---
 smb_force_user: myuser
+
+# --- GitHub / Flux Configuration (Step 4) ---
+github_token: ghp_xxxxxxxxxxxxxxxxxxxx  # Personal access token with repo scope
+github_owner: your-username             # GitHub username or org
+github_repo: homelab                    # Repository name

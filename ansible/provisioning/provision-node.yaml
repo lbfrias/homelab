@@ -184,7 +184,7 @@
         -v {{ playbook_dir }}/output/{{ node }}:/work
         -v {{ rocky_iso_path }}:/Rocky.iso:ro
         fedora:latest
-        sh -c "dnf install -y lorax >/dev/null 2>&1 && mkksiso --skip-mkefiboot --ks /work/ks.cfg -R 'set timeout=60' 'set timeout=1' -R 'set default=\"1\"' 'set default=\"0\"' /Rocky.iso /work/Rocky-{{ node }}.iso"
+        sh -c "dnf install -y lorax xorriso >/dev/null 2>&1 && mkksiso --skip-mkefiboot --ks /work/ks.cfg -R 'set timeout=60' 'set timeout=1' -R 'set default=\"1\"' 'set default=\"0\"' /Rocky.iso /work/Rocky-{{ node }}.iso"
       when: target_node.os == 'rocky'
 
     - name: Write ISO to USB
@@ -213,14 +213,14 @@
             src: "{{ playbook_dir }}/output/{{ node }}/Rocky-{{ node }}.iso"
             fstype: iso9660
             opts: loop,ro
-            state: mounted
+            state: ephemeral
 
         - name: Mount USB EFI partition
           mount:
             path: /tmp/usb-efi
             src: "{{ device }}2"
             fstype: vfat
-            state: mounted
+            state: ephemeral
 
         - name: Copy correct grub.cfg to USB EFI partition
           copy:
@@ -231,18 +231,22 @@
         - name: Unmount USB EFI partition
           mount:
             path: /tmp/usb-efi
-            state: unmounted
+            state: absent
 
         - name: Unmount ISO
           mount:
             path: /tmp/iso-mount
-            state: unmounted
+            state: absent
       become: true
       when: target_node.os == 'rocky'
 
     #==========================================================================
     # DONE
     #==========================================================================
+    - name: Unmount device partitions (safe eject)
+      shell: "umount {{ device }}* 2>/dev/null || true"
+      become: true
+
     - name: Flash complete (RPi)
       debug:
         msg: "{{ node }} flashed to {{ device }}. Remove SD card and boot."

@@ -1,13 +1,28 @@
 ---
-# Main playbook - applies all roles to cluster nodes
-# Usage (from ansible/ dir): ansible-playbook -e @vars.local.yaml site.yaml
+# Full Cluster Setup - Steps 2, 3, 4 in sequence
+#
+# Usage (from ansible/ dir):
+#   ansible-playbook -e @vars.local.yaml site.yaml
+#
+# This runs:
+#   Step 2 (bootstrap): packages, prerequisites, NFS/SMB
+#   Step 3 (k3s): K3s HA cluster
+#   Step 4 (flux): GitOps bootstrap
+#
+# Prerequisites:
+#   - Nodes provisioned (Step 1) and reachable via SSH
+#   - vars.local.yaml configured with github_token, github_owner, github_repo
+#
+# For selective runs, use individual playbooks:
+#   ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml
+#   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
+#   ansible-playbook -e @vars.local.yaml playbooks/flux.yaml
 
-- name: Configure all nodes
-  hosts: k3s_cluster
-  roles:
-    - common
+- name: "Step 2: Bootstrap"
+  ansible.builtin.import_playbook: playbooks/bootstrap.yaml
 
-- name: Configure NFS/SMB on xialing
-  hosts: xialing
-  roles:
-    - nfs_smb
+- name: "Step 3: K3s"
+  ansible.builtin.import_playbook: playbooks/k3s.yaml
+
+- name: "Step 4: Flux"
+  ansible.builtin.import_playbook: playbooks/flux.yaml

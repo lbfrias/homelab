@@ -5,7 +5,7 @@ nfs_export_path: /mnt/data
 nfs_export_options: "rw,sync,no_subtree_check,no_root_squash"
 
 # SMB share configuration
-smb_share_name: data
-smb_share_path: /mnt/data
+smb_share_name: Library
+smb_share_path: /mnt/data/library
 # smb_force_user comes from -e @vars.local.yaml
-smb_guest_ok: true
+smb_guest_ok: false

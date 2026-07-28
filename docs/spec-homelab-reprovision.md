@@ -18,7 +18,7 @@ The user needs full Infrastructure as Code that enables:
 
 Build a complete IaC stack that provisions the 3-node K3s cluster from bare metal to running workloads:
 
-1. **PXE boot** installs the OS on all nodes automatically
+1. **Physical media** installs the OS (cloud-init for RPi, Kickstart for x86)
 2. **Ansible** configures nodes and bootstraps K3s
 3. **Flux** deploys and manages all K8s workloads via GitOps
 4. **Longhorn** provides persistent storage with NAS-backed backups
@@ -88,14 +88,19 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 - **K8s workloads:** Flux GitOps watching `manifests/` directory
 - **Secrets:** External Secrets Operator → Bitwarden
 
-### Ansible Structure (Minimal-First Approach)
+### Ansible Structure (Five-Step Aligned)
 
 - **Inventory:** Static YAML with groups for `rpi` (peggy, yelena) and `x86` (xialing)
 - **Playbooks:**
-  - `ping.yml` — Verify connectivity
-  - `k3s.yml` — Install K3s (vanilla, fix issues as they appear)
+  - `ping.yaml` — Verify connectivity
+  - `bootstrap.yaml` — Step 2: packages, kernel modules, sysctl, NFS/SMB
+  - `k3s.yaml` — Step 3: K3s HA cluster installation
+  - `flux.yaml` — Step 4: GitOps bootstrap
+  - `site.yaml` — Runs Steps 2-4 in sequence
+- **Roles:**
+  - `common` — Shared packages and K8s prerequisites
+  - `nfs_smb` — NFS/SMB server (xialing only)
 - **Philosophy:** Start minimal, debug issues as they arise, document fixes in CONTEXT.md as real ADRs
-- **No pre-emptive hardening:** Skip cgroups tweaks, iptables-legacy, kernel-modules-extra, firewalld rules until something actually breaks
 - **Idempotency:** All tasks must be safe to re-run
 
 ### Package Management
@@ -105,7 +110,7 @@ Two-layer approach for idempotent package installation:
 1. **Kickstart `%packages`** — Minimal base only (openssh, sudo, vim-minimal, rsync). These are installed during OS provisioning.
 
 2. **Ansible role** — Runtime packages declared in a `packages` variable. When you need a new package on a live cluster:
-   - Add to `ansible/roles/common/defaults/main.yml` (or group/host vars)
+   - Add to `ansible/roles/common/defaults/main.yaml` (or group/host vars)
    - Run: `ansible-playbook site.yaml -l xialing --tags packages`
    - On next full reprovision, Ansible installs it idempotently
 
@@ -292,14 +297,16 @@ xialing has an internal SSD that can't be flashed from the desktop. Instead, boo
 
 Kickstart config lives in `provisioning/templates/ks.cfg.j2` alongside cloud-init templates.
 
-### Phase Ordering (Minimal-First)
+### Phase Ordering (Five-Step Model)
 
-Implementation follows dependency order, starting minimal and fixing issues as they appear:
+Implementation follows the five-step provisioning model:
 
-1. **Phase 1:** Ansible inventory + SSH (can reach nodes)
-2. **Phase 2:** K3s HA cluster (vanilla install, debug what breaks)
-3. **Phase 3:** Flux + core infra (MetalLB, Longhorn, ESO, Multus — in parallel)
-4. **Phase 4:** Workloads (apps deploy)
-5. **Phase 5:** Backup validation (DR tested)
+| Step | Name | Tool | What It Does |
+|------|------|------|--------------|
+| 1 | **Provision** | cloud-init / Kickstart | OS install, SSH access |
+| 2 | **Bootstrap** | `ansible-playbook playbooks/bootstrap.yaml` | Packages, kernel modules, sysctl, NFS/SMB |
+| 3 | **K3s** | `ansible-playbook playbooks/k3s.yaml` | HA cluster with embedded etcd |
+| 4 | **Flux** | `ansible-playbook playbooks/flux.yaml` | GitOps bootstrap |
+| 5 | **Services** | Automatic (Flux reconciles `manifests/`) | Infrastructure and apps deploy |
 
 Document every fix needed in CONTEXT.md — these become real ADRs based on actual problems, not cargo-culted configs from old playbooks.

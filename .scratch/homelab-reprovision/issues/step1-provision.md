@@ -4,19 +4,19 @@
 
 **Blocked by:** Step 0 (Network Prep)
 
-**Status:** in progress (needs cloud-init fix for RPi)
+**Status:** done
 
 ## Workflow
 
 ### Raspberry Pi (cloud-init)
 1. Flash Raspberry Pi OS Lite to SD card
 2. Add cloud-init files (`user-data`, `meta-data`) to boot partition
-3. Boot — cloud-init runs in this order:
-   - `disk_setup` → partition HDD
-   - `fs_setup` → format as ext4
-   - `mounts` → mount to `/mnt/var-hdd` (temp)
-   - `write_files` → SSH config
-   - `runcmd` → rsync /var to HDD, update fstab, reboot
+3. Boot — cloud-init `runcmd` handles everything:
+   - `wipefs` → wipe HDD
+   - `parted` → create GPT partition
+   - `mkfs.ext4` → format partition
+   - `rsync` → copy /var to HDD
+   - Update fstab with UUID, reboot
 4. Second boot — fstab mounts HDD to /var, node ready for Ansible
 
 **Important:** No `package_update`/`package_upgrade` in cloud-init. Ansible handles packages after /var migration is complete.
@@ -32,11 +32,10 @@
 - [x] Flash Raspberry Pi OS Lite 64-bit to SD cards
 - [x] Add `user-data` and `meta-data` to boot partition
 - [x] Configure: hostname, user, SSH key, passwordless sudo
-- [ ] Fix cloud-init template: use disk_setup/fs_setup/mounts for HDD
-- [ ] Fix cloud-init template: remove package_update/package_upgrade
-- [ ] Fix cloud-init template: runcmd does rsync + fstab + reboot
-- [ ] Reprovision peggy and yelena with fixed cloud-init
-- [ ] Verify: SSH in with key, /var mounted on HDD
+- [x] Fix cloud-init template: all HDD setup in runcmd (wipefs, parted, mkfs, rsync)
+- [x] Fix cloud-init template: remove package_update/package_upgrade
+- [x] Reprovision peggy and yelena with fixed cloud-init
+- [x] Verify: SSH in with key, /var mounted on HDD
 
 ### Rocky Linux (xialing)
 - [x] Create Kickstart template (ks.cfg.j2)
@@ -49,4 +48,4 @@
 
 **mkksiso EFI bug:** The `-R` and `--ks` flags update grub.cfg but NOT the appended EFI partition. Fixed by post-flash step that copies correct grub.cfg to USB EFI partition.
 
-**RPi /var migration bug (discovered):** Original cloud-init ran `package_update`/`package_upgrade` before /var migration in runcmd. This corrupted dpkg state because apt wrote to old /var, then migration moved it. Fix: use cloud-init's `disk_setup`/`fs_setup`/`mounts` modules, defer all package operations to Ansible.
+**RPi /var migration:** cloud-init's `disk_setup`/`fs_setup` modules skip formatting if disk layout "matches" (even with `overwrite: true`). Solution: do all HDD setup in `runcmd` with explicit commands (wipefs, parted, mkfs, rsync).
