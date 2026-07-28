@@ -6,7 +6,7 @@
 
 **Blocked by:** Step 3 (K3s)
 
-**Status:** ready
+**Status:** done
 
 ## Tasks
 
@@ -15,4 +15,4 @@
 - [x] Add `github_token`, `github_owner`, `github_repo` to `vars.local.yaml`
 - [x] Run playbook to bootstrap Flux
 - [x] Verify: `flux get all` shows healthy reconciliation
-- [ ] Verify: Changes pushed to repo are automatically applied
+- [x] Verify: Changes pushed to repo are automatically applied

@@ -4,7 +4,7 @@
 
 **Blocked by:** Step 4 (Flux)
 
-**Status:** in-progress
+**Status:** done
 
 ## Overview
 
@@ -20,14 +20,20 @@ The ResourceSetInputProvider uses the **GitHub REST API** to list branches, not 
 
 At 5-minute polling intervals, a public repo uses ~288 requests/day, well under the 1,440/day limit.
 
+### Manual Reconcile for Instant Feedback
+During active development, the 5-minute polling interval can feel slow. Use manual reconcile for instant feedback:
+```bash
+kubectl annotate resourcesetinputprovider test-branches -n flux-system reconcile.fluxcd.io/requestedAt=$(date +%s) --overwrite
+```
+
 ## Tasks
 
-- [ ] Create `manifests/infrastructure/controllers/flux-operator/` directory
-- [ ] Add Flux Operator HelmRepository + HelmRelease
-- [ ] Create `test` namespace manifest
-- [ ] Create ResourceSetInputProvider for `test/*` branches
-- [ ] Create ResourceSet templating GitRepository + Kustomization per branch
-- [ ] Create Kustomization to deploy infrastructure/controllers
-- [ ] Verify: Push `test/hello` branch with simple ConfigMap
-- [ ] Verify: ConfigMap appears in `test` namespace
-- [ ] Verify: Delete branch → ConfigMap is pruned
+- [x] Create `manifests/infrastructure/controllers/flux-operator/` directory
+- [x] Add Flux Operator HelmRepository + HelmRelease
+- [x] Create `test` namespace manifest
+- [x] Create ResourceSetInputProvider for `test/*` branches
+- [x] Create ResourceSet templating GitRepository + Kustomization per branch
+- [x] Create Kustomization to deploy infrastructure/controllers
+- [x] Verify: Push `test/hello` branch with simple ConfigMap
+- [x] Verify: ConfigMap appears in `test` namespace
+- [x] Verify: Delete branch → ConfigMap is pruned
