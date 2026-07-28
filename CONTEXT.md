@@ -256,9 +256,7 @@ homelab/
 │       ├── nfs_smb/             # NFS/SMB server (xialing only)
 │       └── prereqs/             # OS-specific K8s prerequisites
 ├── manifests/                   # Step 5: K8s workloads (Flux watches)
-│   ├── clusters/
-│   │   └── homelab/
-│   │       └── flux-system/
+│   ├── flux/                    # Flux bootstrap files (GitRepository, Kustomization)
 │   ├── infrastructure/
 │   │   ├── controllers/         # MetalLB, Longhorn, ESO, Multus
 │   │   └── configs/             # Pools, NADs, ClusterSecretStore

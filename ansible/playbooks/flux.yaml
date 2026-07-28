@@ -6,26 +6,27 @@
 #
 # Prerequisites:
 #   - K3s cluster running (Step 3 complete)
+#   - Kubeconfig configured (default: ~/.kube/config)
 #   - GitHub token in vars.local.yaml: github_token
 #   - GitHub repo configured: github_owner, github_repo
 #
 # What this does:
-#   - Installs Flux CLI on xialing
+#   - Installs Flux CLI on localhost (the control machine)
 #   - Bootstraps Flux with GitHub source
 #   - Flux watches manifests/ directory for workloads
 #
 # After completion:
-#   - Flux auto-reconciles manifests/clusters/homelab/flux-system/
+#   - Flux auto-reconciles manifests/
 #   - Add infrastructure and apps to manifests/ to deploy
 
 - name: Bootstrap Flux GitOps
-  hosts: xialing
-  become: true
+  hosts: localhost
+  connection: local
 
   vars:
-    flux_version: "2.4.0"
+    flux_version: "2.9.3"
     flux_namespace: flux-system
-    flux_path: "manifests/clusters/homelab"
+    flux_path: "manifests"
     flux_branch: main
 
   pre_tasks:
@@ -42,20 +43,22 @@
             github_repo: homelab
 
   tasks:
-    - name: Check if Flux CLI is installed
-      ansible.builtin.stat:
-        path: /usr/local/bin/flux
-      register: flux_cli
+    - name: Check Flux CLI version
+      ansible.builtin.command: flux version --client -o json
+      register: flux_cli_version
+      failed_when: false
+      changed_when: false
 
-    - name: Install Flux CLI
-      when: not flux_cli.stat.exists
+    - name: Install or upgrade Flux CLI
+      when: >
+        flux_cli_version.rc != 0 or
+        (flux_cli_version.stdout | from_json).flux != 'v' + flux_version
+      become: true
       ansible.builtin.shell: |
         curl -s https://fluxcd.io/install.sh | FLUX_VERSION={{ flux_version }} bash
-      args:
-        creates: /usr/local/bin/flux
 
     - name: Check if Flux is already bootstrapped
-      ansible.builtin.command: /usr/local/bin/k3s kubectl get namespace {{ flux_namespace }}
+      ansible.builtin.command: kubectl get namespace {{ flux_namespace }}
       register: flux_ns_check
       failed_when: false
       changed_when: false
@@ -63,31 +66,25 @@
     - name: Bootstrap Flux with GitHub
       when: flux_ns_check.rc != 0
       ansible.builtin.shell: |
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-        export GITHUB_TOKEN="{{ github_token }}"
-        /usr/local/bin/flux bootstrap github \
+        flux bootstrap github \
           --owner={{ github_owner }} \
           --repository={{ github_repo }} \
           --branch={{ flux_branch }} \
           --path={{ flux_path }} \
-          --personal \
-          --private=false
+          --personal
       environment:
         GITHUB_TOKEN: "{{ github_token }}"
 
     - name: Wait for Flux to be ready
       ansible.builtin.command: >
-        /usr/local/bin/k3s kubectl wait --for=condition=Ready
+        kubectl wait --for=condition=Ready
         pods -n {{ flux_namespace }} --all --timeout=120s
-      register: flux_ready
       retries: 3
       delay: 10
       changed_when: false
 
     - name: Verify Flux reconciliation
-      ansible.builtin.shell: |
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-        /usr/local/bin/flux get all -A
+      ansible.builtin.command: flux get all -A
       register: flux_status
       changed_when: false
 
@@ -106,5 +103,5 @@
           3. Push to GitHub — Flux will auto-reconcile
 
           Monitor with:
-            KUBECONFIG=~/.kube/config-homelab flux get all -A
-            KUBECONFIG=~/.kube/config-homelab kubectl get pods -A
+            flux get all -A
+            kubectl get pods -A
