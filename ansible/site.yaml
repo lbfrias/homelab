@@ -1,0 +1,13 @@
+---
+# Main playbook - applies all roles to cluster nodes
+# Usage (from ansible/ dir): ansible-playbook -e @vars.local.yaml site.yaml
+
+- name: Configure all nodes
+  hosts: k3s_cluster
+  roles:
+    - common
+
+- name: Configure NFS/SMB on xialing
+  hosts: xialing
+  roles:
+    - nfs_smb

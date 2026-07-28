@@ -10,9 +10,9 @@ text
 url --url="https://download.rockylinux.org/pub/rocky/10/BaseOS/x86_64/os/"
 
 #---------- Locale & Keyboard ----------
-lang en_US.UTF-8
-keyboard --xlayouts='us'
-timezone Asia/Manila --utc
+lang {{ locale }}
+keyboard --xlayouts='{{ keyboard_layout }}'
+timezone {{ timezone }} --utc --ntpservers={{ ntp_servers | join(',') }}
 
 #---------- Network ----------
 network --bootproto=dhcp --device=link --activate --onboot=yes

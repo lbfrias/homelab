@@ -1,0 +1,304 @@
+---
+# K3s HA Cluster Bootstrap
+#
+# Usage (from ansible/ dir):
+#   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
+#
+# First run will prompt for K3s token (generate with: openssl rand -hex 32)
+# Subsequent runs use token from the first server node.
+#
+# Cluster topology:
+#   - xialing: first server (--cluster-init)
+#   - peggy, yelena: join via xialing
+#   - All nodes are control-plane + worker
+
+# Play 1: Install K3s on first server (xialing)
+- name: K3s First Server Bootstrap
+  hosts: xialing
+  become: true
+  vars_prompt:
+    - name: k3s_token_input
+      prompt: "Enter K3s token (leave empty to fetch from xialing if already initialized)"
+      private: true
+      default: ""
+
+  vars:
+    k3s_disable_components:
+      - servicelb
+      - traefik
+
+  pre_tasks:
+    - name: Check if K3s token file exists
+      ansible.builtin.stat:
+        path: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_stat
+
+    - name: Set token from input
+      when: k3s_token_input != ""
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_input }}"
+
+    - name: Read existing token if available
+      when:
+        - k3s_token_input == ""
+        - k3s_token_stat.stat.exists
+      block:
+        - name: Slurp token file
+          ansible.builtin.slurp:
+            src: /var/lib/rancher/k3s/server/node-token
+          register: k3s_token_file
+
+        - name: Set token from file
+          ansible.builtin.set_fact:
+            k3s_token: "{{ k3s_token_file.content | b64decode | trim }}"
+
+    - name: Fail if no token available for fresh install
+      when:
+        - k3s_token_input == ""
+        - not k3s_token_stat.stat.exists
+      ansible.builtin.fail:
+        msg: "K3s token required for fresh install. Generate with: openssl rand -hex 32"
+
+  tasks:
+    # Prerequisites for Rocky Linux
+    - name: Ensure firewalld is stopped and disabled
+      ansible.builtin.systemd:
+        name: firewalld
+        state: stopped
+        enabled: false
+      ignore_errors: true
+
+    - name: Install required packages
+      ansible.builtin.dnf:
+        name:
+          - iptables
+          - container-selinux
+          - kernel-modules-extra
+        state: present
+
+    - name: Load required kernel modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - br_netfilter
+        - overlay
+      register: modprobe_result
+      ignore_errors: true
+
+    - name: Fail with helpful message if br_netfilter unavailable
+      when: modprobe_result.results | selectattr('item', 'eq', 'br_netfilter') | selectattr('failed', 'true') | list | length > 0
+      ansible.builtin.fail:
+        msg: |
+          br_netfilter module not available for running kernel ({{ ansible_kernel }}).
+          This usually means kernel-modules-extra doesn't match the running kernel.
+          Try: reboot and re-run playbook (GRUB may boot a kernel with modules available).
+
+    - name: Persist kernel modules
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k3s.conf
+        content: |
+          br_netfilter
+          overlay
+        mode: "0644"
+
+    - name: Set sysctl for K8s networking
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/k3s.conf
+        reload: true
+      loop:
+        - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+        - { key: "net.ipv4.ip_forward", value: "1" }
+
+    - name: Check if K3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Install K3s (cluster-init)
+      when: not k3s_binary.stat.exists
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | sh -s - server \
+          --cluster-init \
+          --token "{{ k3s_token }}" \
+          --disable {{ k3s_disable_components | join(' --disable ') }} \
+          --write-kubeconfig-mode 644
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure K3s service is enabled and started
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Wait for K3s to be ready
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        state: present
+        timeout: 120
+
+    - name: Wait for API server
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
+      register: kubectl_check
+      until: kubectl_check.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+
+
+# Play 2: Install K3s on joining servers (peggy, yelena)
+- name: K3s Join Servers
+  hosts: rpi
+  become: true
+
+  vars:
+    k3s_first_server: xialing
+    k3s_server_url: "https://{{ node_ips.xialing }}:6443"
+    k3s_disable_components:
+      - servicelb
+      - traefik
+
+  pre_tasks:
+    - name: Read token from first server
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_file
+      delegate_to: "{{ k3s_first_server }}"
+
+    - name: Set token fact
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_file.content | b64decode | trim }}"
+
+  tasks:
+    # Prerequisites for Debian/Raspberry Pi OS
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - iptables
+          - iptables-persistent
+        state: present
+        update_cache: true
+
+    - name: Check if cgroup memory is enabled
+      ansible.builtin.command: grep -q 'cgroup_memory=1' /boot/firmware/cmdline.txt
+      register: cgroup_check
+      failed_when: false
+      changed_when: false
+
+    - name: Enable cgroup memory in cmdline.txt
+      when: cgroup_check.rc != 0
+      ansible.builtin.lineinfile:
+        path: /boot/firmware/cmdline.txt
+        backrefs: true
+        regexp: '^(.*)$'
+        line: '\1 cgroup_memory=1 cgroup_enable=memory'
+      register: cmdline_updated
+
+    - name: Reboot if cmdline was updated
+      when: cmdline_updated.changed
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+
+    - name: Load required kernel modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - br_netfilter
+        - overlay
+
+    - name: Persist kernel modules
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k3s.conf
+        content: |
+          br_netfilter
+          overlay
+        mode: "0644"
+
+    - name: Set sysctl for K8s networking
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/k3s.conf
+        reload: true
+      loop:
+        - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+        - { key: "net.ipv4.ip_forward", value: "1" }
+
+    - name: Check if K3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Install K3s (join cluster)
+      when: not k3s_binary.stat.exists
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | sh -s - server \
+          --server "{{ k3s_server_url }}" \
+          --token "{{ k3s_token }}" \
+          --disable {{ k3s_disable_components | join(' --disable ') }} \
+          --write-kubeconfig-mode 644
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure K3s service is enabled and started
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: true
+        daemon_reload: true
+
+
+# Play 3: Verify cluster and extract kubeconfig
+- name: Verify K3s Cluster
+  hosts: xialing
+  become: true
+  vars:
+    kubeconfig_local_path: "~/.kube/config-homelab"
+  tasks:
+    - name: Wait for all nodes
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
+      register: kubectl_nodes
+      until:
+        - kubectl_nodes.rc == 0
+        - "'peggy' in kubectl_nodes.stdout"
+        - "'yelena' in kubectl_nodes.stdout"
+        - "'xialing' in kubectl_nodes.stdout"
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Show cluster nodes
+      ansible.builtin.debug:
+        msg: "{{ kubectl_nodes.stdout_lines }}"
+
+    - name: Fetch kubeconfig
+      ansible.builtin.slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      register: kubeconfig_raw
+
+    - name: Save kubeconfig locally
+      delegate_to: localhost
+      become: false
+      block:
+        - name: Ensure ~/.kube directory exists
+          ansible.builtin.file:
+            path: "{{ kubeconfig_local_path | dirname | expanduser }}"
+            state: directory
+            mode: "0700"
+
+        - name: Write kubeconfig with corrected server URL
+          ansible.builtin.copy:
+            content: "{{ kubeconfig_raw.content | b64decode | regex_replace('127\\.0\\.0\\.1', ansible_host) }}"
+            dest: "{{ kubeconfig_local_path | expanduser }}"
+            mode: "0600"
+
+        - name: Show kubeconfig location
+          ansible.builtin.debug:
+            msg: "Kubeconfig saved to {{ kubeconfig_local_path }}. Use: KUBECONFIG={{ kubeconfig_local_path }} kubectl get nodes"

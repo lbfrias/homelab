@@ -7,6 +7,18 @@
 raspios_version: "2026-06-19"
 rocky_major_version: "10"
 
+# System locale and timezone
+timezone: "Asia/Manila"
+locale: "en_US.UTF-8"
+keyboard_layout: "us"
+
+# NTP servers (defaults to Philippine NIST servers + global pool)
+ntp_servers:
+  - 0.asia.pool.ntp.org
+  - 1.asia.pool.ntp.org
+  - 2.asia.pool.ntp.org
+  - 3.asia.pool.ntp.org
+
 nodes:
   - name: peggy
     os: raspios

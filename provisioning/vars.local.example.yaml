@@ -1,7 +1,0 @@
-# Local provisioning variables (copy to vars.local.yaml) - DO NOT COMMIT
-# Copy to vars.local.yaml and fill in sensitive values
-
-username: myuser
-password: changeme  # optional, omit to disable password login
-ssh_public_key: ssh-ed25519 AAAA...
-ssh_port: 22

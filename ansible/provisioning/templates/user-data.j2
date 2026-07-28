@@ -4,6 +4,22 @@ manage_etc_hosts: true
 enable_ssh: true
 ssh_pwauth: true
 
+# Locale and timezone
+locale: {{ locale }}
+timezone: {{ timezone }}
+
+# NTP configuration
+ntp:
+  enabled: true
+  servers:
+{% for server in ntp_servers %}
+    - {{ server }}
+{% endfor %}
+
+# Update packages on first boot
+package_update: true
+package_upgrade: true
+
 users:
   - name: {{ username }}
     groups: users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,gpio,spi,i2c,render,sudo

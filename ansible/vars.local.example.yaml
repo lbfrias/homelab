@@ -1,0 +1,26 @@
+# Local variables - DO NOT COMMIT
+# Copy to vars.local.yaml and fill in your values
+#
+# Usage (from ansible/ dir):
+#   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
+
+# --- SSH & User Configuration ---
+username: myuser
+password: changeme  # optional, omit to disable password login
+ssh_public_key: ssh-ed25519 AAAA...
+ssh_port: 22
+
+# --- Ansible Connection ---
+ansible_user: myuser
+ansible_port: 22
+
+# --- Network Configuration ---
+node_ips:
+  xialing: 10.0.0.x
+  peggy: 10.0.0.x
+  yelena: 10.0.0.x
+
+nfs_export_network: "10.0.0.0/24"
+
+# --- SMB Configuration ---
+smb_force_user: myuser

@@ -17,7 +17,7 @@ This repo contains everything needed to provision and manage my homelab from scr
 |------|----------|-----|------|
 | peggy | RPi 4 4GB | Raspberry Pi OS Lite | K3s control plane + worker |
 | yelena | RPi 4 8GB | Raspberry Pi OS Lite | K3s control plane + worker |
-| xialing | HP Prodesk i5-8500, 16GB RAM | Rocky Linux 9 | K3s control plane + worker, NAS |
+| xialing | HP Prodesk i5-8500, 16GB RAM | Rocky Linux 10 | K3s control plane + worker, NAS |
 
 ## Services
 

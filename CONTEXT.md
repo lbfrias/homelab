@@ -146,6 +146,24 @@ This document captures the shared understanding and key decisions for this homel
 | K8s workloads | Flux (GitOps) |
 | Secrets | External Secrets Operator → Bitwarden |
 
+## K3s Prerequisites
+
+Platform-specific requirements discovered during cluster bootstrap:
+
+### Rocky Linux (xialing)
+
+- **firewalld:** Disabled (conflicts with K3s iptables rules)
+- **kernel-modules-extra:** Required for `br_netfilter` module. Must match running kernel version — if repos don't have the matching version, boot into an older kernel that has it.
+- **Kernel modules:** `br_netfilter`, `overlay`
+- **Sysctl:** `net.bridge.bridge-nf-call-iptables=1`, `net.bridge.bridge-nf-call-ip6tables=1`, `net.ipv4.ip_forward=1`
+
+### Raspberry Pi OS (peggy, yelena)
+
+- **cgroup memory:** Add `cgroup_memory=1 cgroup_enable=memory` to `/boot/firmware/cmdline.txt` (requires reboot)
+- **iptables-persistent:** Required for iptables-save/restore tools
+- **Kernel modules:** `br_netfilter`, `overlay`
+- **Sysctl:** Same as Rocky Linux
+
 ## Backup & Restore
 
 | Data | Backup Method | Location |
@@ -218,3 +236,8 @@ homelab/
 | **yelena** | Raspberry Pi 4 8GB node |
 | **xialing** | HP Prodesk 600 G4 node |
 | **macvlan-shim** | Host interface enabling node-to-macvlan-pod communication |
+| **LAN-attached pod** | A pod with a macvlan secondary interface for direct LAN access (e.g., Home Assistant, Omada Controller) |
+
+## Conventions
+
+- **YAML files:** Use `.yaml` extension (not `.yml`)
