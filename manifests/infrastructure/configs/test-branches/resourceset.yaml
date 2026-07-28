@@ -40,14 +40,6 @@ spec:
         sourceRef:
           kind: GitRepository
           name: test-<< inputs.id >>
-        path: ./manifests
+        path: ./manifests/apps
         prune: true
         targetNamespace: test
-        # Force resources into test namespace
-        patches:
-          - patch: |
-              - op: replace
-                path: /metadata/namespace
-                value: test
-            target:
-              labelSelector: "app.kubernetes.io/part-of!=flux"
