@@ -1,16 +1,118 @@
 ---
-# K3s HA Cluster Bootstrap
+# Step 3: K3s HA Cluster Bootstrap
 #
 # Usage (from ansible/ dir):
 #   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
 #
-# First run will prompt for K3s token (generate with: openssl rand -hex 32)
-# Subsequent runs use token from the first server node.
+# Prerequisites:
+#   - Run bootstrap.yaml first (Step 2)
+#   - For fresh install: generate token with `openssl rand -hex 32`
 #
 # Cluster topology:
 #   - xialing: first server (--cluster-init)
 #   - peggy, yelena: join via xialing
 #   - All nodes are control-plane + worker
+
+# Play 0: Install K8s prerequisites (kernel modules, sysctl)
+- name: K3s Prerequisites
+  hosts: k3s_cluster
+  become: true
+  vars:
+    k8s_kernel_modules:
+      - br_netfilter
+      - overlay
+    k8s_sysctl:
+      - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+      - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+      - { key: "net.ipv4.ip_forward", value: "1" }
+  tasks:
+    # OS-specific packages needed for K3s
+    - name: Install K3s dependencies (Rocky)
+      when: ansible_os_family == "RedHat"
+      ansible.builtin.dnf:
+        name:
+          - iptables
+          - container-selinux
+          - kernel-modules-extra
+        state: present
+
+    - name: Install K3s dependencies (Debian)
+      when: ansible_os_family == "Debian"
+      ansible.builtin.apt:
+        name:
+          - iptables
+          - iptables-persistent
+        state: present
+
+    # Kernel modules for container networking
+    - name: Load K8s required kernel modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ k8s_kernel_modules }}"
+      register: modprobe_result
+      ignore_errors: true
+
+    - name: Fail with helpful message if br_netfilter unavailable
+      when: modprobe_result.results | selectattr('item', 'eq', 'br_netfilter') | selectattr('failed', 'true') | list | length > 0
+      ansible.builtin.fail:
+        msg: |
+          br_netfilter module not available for running kernel ({{ ansible_kernel }}).
+          This usually means kernel-modules-extra doesn't match the running kernel.
+          Try: reboot and re-run playbook (GRUB may boot a kernel with modules available).
+
+    - name: Persist kernel modules across reboots
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          {% for module in k8s_kernel_modules %}
+          {{ module }}
+          {% endfor %}
+        mode: "0644"
+
+    # Sysctl for K8s networking
+    - name: Set sysctl for K8s networking
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/k8s.conf
+        reload: true
+      loop: "{{ k8s_sysctl }}"
+
+    # Rocky Linux: disable firewalld (conflicts with K3s iptables)
+    - name: Disable firewalld (Rocky)
+      when: ansible_os_family == "RedHat"
+      ansible.builtin.systemd:
+        name: firewalld
+        state: stopped
+        enabled: false
+      ignore_errors: true
+
+    # Raspberry Pi OS: enable cgroup memory for containers
+    - name: Check if cgroup memory is enabled (RPi)
+      when: ansible_os_family == "Debian"
+      ansible.builtin.command: grep -q 'cgroup_memory=1' /boot/firmware/cmdline.txt
+      register: cgroup_check
+      failed_when: false
+      changed_when: false
+
+    - name: Enable cgroup memory (RPi)
+      when:
+        - ansible_os_family == "Debian"
+        - cgroup_check.rc != 0
+      ansible.builtin.lineinfile:
+        path: /boot/firmware/cmdline.txt
+        backrefs: true
+        regexp: '^(.*)$'
+        line: '\1 cgroup_memory=1 cgroup_enable=memory'
+      register: cmdline_updated
+
+    - name: Reboot if cgroup config changed (RPi)
+      when:
+        - ansible_os_family == "Debian"
+        - cmdline_updated.changed
+      ansible.builtin.reboot:
+        reboot_timeout: 300
 
 # Play 1: Install K3s on first server (xialing)
 - name: K3s First Server Bootstrap
@@ -60,59 +162,6 @@
         msg: "K3s token required for fresh install. Generate with: openssl rand -hex 32"
 
   tasks:
-    # Prerequisites for Rocky Linux
-    - name: Ensure firewalld is stopped and disabled
-      ansible.builtin.systemd:
-        name: firewalld
-        state: stopped
-        enabled: false
-      ignore_errors: true
-
-    - name: Install required packages
-      ansible.builtin.dnf:
-        name:
-          - iptables
-          - container-selinux
-          - kernel-modules-extra
-        state: present
-
-    - name: Load required kernel modules
-      community.general.modprobe:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - br_netfilter
-        - overlay
-      register: modprobe_result
-      ignore_errors: true
-
-    - name: Fail with helpful message if br_netfilter unavailable
-      when: modprobe_result.results | selectattr('item', 'eq', 'br_netfilter') | selectattr('failed', 'true') | list | length > 0
-      ansible.builtin.fail:
-        msg: |
-          br_netfilter module not available for running kernel ({{ ansible_kernel }}).
-          This usually means kernel-modules-extra doesn't match the running kernel.
-          Try: reboot and re-run playbook (GRUB may boot a kernel with modules available).
-
-    - name: Persist kernel modules
-      ansible.builtin.copy:
-        dest: /etc/modules-load.d/k3s.conf
-        content: |
-          br_netfilter
-          overlay
-        mode: "0644"
-
-    - name: Set sysctl for K8s networking
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        sysctl_file: /etc/sysctl.d/k3s.conf
-        reload: true
-      loop:
-        - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
-        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
-        - { key: "net.ipv4.ip_forward", value: "1" }
-
     - name: Check if K3s is already installed
       ansible.builtin.stat:
         path: /usr/local/bin/k3s
@@ -175,62 +224,6 @@
         k3s_token: "{{ k3s_token_file.content | b64decode | trim }}"
 
   tasks:
-    # Prerequisites for Debian/Raspberry Pi OS
-    - name: Install required packages
-      ansible.builtin.apt:
-        name:
-          - iptables
-          - iptables-persistent
-        state: present
-        update_cache: true
-
-    - name: Check if cgroup memory is enabled
-      ansible.builtin.command: grep -q 'cgroup_memory=1' /boot/firmware/cmdline.txt
-      register: cgroup_check
-      failed_when: false
-      changed_when: false
-
-    - name: Enable cgroup memory in cmdline.txt
-      when: cgroup_check.rc != 0
-      ansible.builtin.lineinfile:
-        path: /boot/firmware/cmdline.txt
-        backrefs: true
-        regexp: '^(.*)$'
-        line: '\1 cgroup_memory=1 cgroup_enable=memory'
-      register: cmdline_updated
-
-    - name: Reboot if cmdline was updated
-      when: cmdline_updated.changed
-      ansible.builtin.reboot:
-        reboot_timeout: 300
-
-    - name: Load required kernel modules
-      community.general.modprobe:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - br_netfilter
-        - overlay
-
-    - name: Persist kernel modules
-      ansible.builtin.copy:
-        dest: /etc/modules-load.d/k3s.conf
-        content: |
-          br_netfilter
-          overlay
-        mode: "0644"
-
-    - name: Set sysctl for K8s networking
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        sysctl_file: /etc/sysctl.d/k3s.conf
-        reload: true
-      loop:
-        - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
-        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
-        - { key: "net.ipv4.ip_forward", value: "1" }
-
     - name: Check if K3s is already installed
       ansible.builtin.stat:
         path: /usr/local/bin/k3s

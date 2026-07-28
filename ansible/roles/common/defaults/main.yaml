@@ -1,0 +1,14 @@
+---
+# Common role defaults
+
+# Packages for all nodes
+common_packages:
+  - curl
+  - vim
+  - jq
+  - glances
+
+# OS-specific packages (installed before common_packages)
+common_packages_debian: []
+common_packages_redhat:
+  - epel-release  # Must come first — provides glances

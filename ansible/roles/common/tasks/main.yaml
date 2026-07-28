@@ -1,0 +1,41 @@
+---
+# Common role - update package cache and install common packages
+
+- name: Update package cache (Debian)
+  when: ansible_os_family == "Debian"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Update package cache (RedHat)
+  when: ansible_os_family == "RedHat"
+  ansible.builtin.dnf:
+    update_cache: true
+
+- name: Install OS-specific packages first (RedHat)
+  when:
+    - ansible_os_family == "RedHat"
+    - common_packages_redhat | length > 0
+  ansible.builtin.dnf:
+    name: "{{ common_packages_redhat }}"
+    state: present
+
+- name: Install OS-specific packages first (Debian)
+  when:
+    - ansible_os_family == "Debian"
+    - common_packages_debian | length > 0
+  ansible.builtin.apt:
+    name: "{{ common_packages_debian }}"
+    state: present
+
+- name: Install common packages (Debian)
+  when: ansible_os_family == "Debian"
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Install common packages (RedHat)
+  when: ansible_os_family == "RedHat"
+  ansible.builtin.dnf:
+    name: "{{ common_packages }}"
+    state: present

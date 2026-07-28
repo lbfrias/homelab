@@ -1,0 +1,27 @@
+---
+# Step 2: Bootstrap - OS-specific setup and NFS/SMB
+#
+# Usage (from ansible/ dir):
+#   ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml
+#
+# What this does:
+#   - Updates package cache
+#   - Disables firewalld on Rocky Linux
+#   - Enables cgroup memory on RPi (reboots if needed)
+#   - Configures NFS/SMB server on xialing
+#
+# Prerequisites:
+#   - Nodes provisioned (Step 1) and reachable via SSH
+
+- name: Bootstrap all cluster nodes
+  hosts: k3s_cluster
+  become: true
+  roles:
+    - common
+
+- name: Configure NFS/SMB on xialing
+  hosts: xialing
+  become: true
+  roles:
+    - role: nfs_smb
+      tags: nfs
