@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-subnet-router
+  namespace: tailscale
+  labels:
+    app: tailscale-subnet-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-subnet-router
+  template:
+    metadata:
+      labels:
+        app: tailscale-subnet-router
+    spec:
+      serviceAccountName: tailscale
+      containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-auth
+                  key: TS_AUTHKEY
+            - name: TS_HOSTNAME
+              value: "homelab-subnet-router"
+            - name: TS_ROUTES
+              value: "10.0.0.0/24,10.0.30.0/24"
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_KUBE_SECRET
+              value: "tailscale-state"
+            - name: TS_ACCEPT_DNS
+              value: "false"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 128Mi

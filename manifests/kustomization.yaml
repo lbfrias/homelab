@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   # flux-system is self-managed by the bootstrap Kustomization, don't include here
   - infrastructure
-  # - apps  # Uncomment when apps are ready
+  - apps
