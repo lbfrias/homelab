@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "flux": {
+    "fileMatch": ["(^|/)manifests/.+\\.yaml$"]
+  },
+  "helm-values": {
+    "fileMatch": ["(^|/)manifests/.+\\.yaml$"]
+  },
+  "kubernetes": {
+    "fileMatch": ["(^|/)manifests/.+\\.yaml$"]
+  },
+  "packageRules": [
+    {
+      "description": "Group all infrastructure controller updates",
+      "matchPaths": ["manifests/infrastructure/controllers/**"],
+      "groupName": "infrastructure-controllers",
+      "schedule": ["before 9am on monday"]
+    },
+    {
+      "description": "Automerge patch updates for Helm charts",
+      "matchDatasources": ["helm"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ],
+  "ignorePaths": [
+    "**/ansible/**",
+    "**/docs/**"
+  ]
+}

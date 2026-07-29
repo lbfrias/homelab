@@ -22,7 +22,7 @@ Build a complete IaC stack that provisions the 3-node K3s cluster from bare meta
 2. **Ansible** configures nodes and bootstraps K3s
 3. **Flux** deploys and manages all K8s workloads via GitOps
 4. **Longhorn** provides persistent storage with NAS-backed backups
-5. **External Secrets Operator** pulls secrets from Bitwarden
+5. **Bitwarden Secrets Manager Operator** syncs secrets from Bitwarden
 
 The entire stack is version-controlled in a public repo, serving as both disaster recovery documentation and a portfolio piece.
 
@@ -58,7 +58,7 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 14. As a homelab operator, I want secrets pulled from Bitwarden, so that I can keep the repo public.
 
-15. As a homelab operator, I want External Secrets Operator configured, so that K8s secrets are automatically populated.
+15. As a homelab operator, I want Bitwarden Secrets Manager Operator configured, so that K8s secrets are automatically populated.
 
 16. As a homelab operator, I want documented manual secret creation, so that others can reproduce the setup without Bitwarden.
 
@@ -88,7 +88,7 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 - **OS install (x86):** USB installer with Kickstart (xialing — internal SSD)
 - **Node config:** Ansible with roles for common, k3s, and OS-specific tasks
 - **K8s workloads:** Flux GitOps watching `manifests/` directory
-- **Secrets:** External Secrets Operator → Bitwarden
+- **Secrets:** Bitwarden Secrets Manager Operator
 
 ### Ansible Structure (Five-Step Aligned)
 
@@ -146,8 +146,8 @@ User data lives on the 4TB USB HDD mounted at `/mnt/data`.
 manifests/
 ├── flux-system/             # Flux bootstrap (auto-generated)
 ├── infrastructure/
-│   ├── controllers/         # MetalLB, Longhorn, ESO, Multus, Flux Operator
-│   └── configs/             # MetalLB pools, NADs, ClusterSecretStore, ResourceSet
+│   ├── controllers/         # MetalLB, Longhorn, Bitwarden SM, Multus, Flux Operator
+│   └── configs/             # MetalLB pools, NADs, ResourceSet
 └── apps/
     ├── media/               # Jellyfin, *arr stack
     ├── network/             # PiHole, Tailscale, Omada
@@ -201,10 +201,10 @@ The Flux Operator extends base Flux with ResourceSet and ResourceSetInputProvide
 - Replica count: 2 (survives 1 node failure)
 - Scheduled backups for critical volumes (HA, Omada, *arr configs)
 
-### External Secrets
+### Bitwarden Secrets Manager
 
-- ClusterSecretStore pointing to Bitwarden
-- ExternalSecret resources per app namespace
+- Bitwarden SM Operator with machine account auth
+- BitwardenSecret resources per app namespace
 - Secrets documented in `docs/secrets.md` for manual creation
 
 ### Home Assistant
@@ -259,7 +259,7 @@ Documented smoke test procedure:
 3. Flux reconciliation succeeds (`flux get all` shows ready)
 4. MetalLB assigns IPs to LoadBalancer services
 5. Longhorn UI accessible, all volumes healthy
-6. ESO creates expected secrets
+6. Bitwarden SM Operator creates expected secrets
 
 ### Integration Test: Multus/Macvlan
 

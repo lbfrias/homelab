@@ -1,6 +1,55 @@
 # Secrets Documentation
 
-This homelab uses External Secrets Operator to pull secrets from Bitwarden. If you're reproducing this setup with your own secret store, you'll need to create the following secrets.
+This homelab uses **Bitwarden Secrets Manager Operator** to sync secrets from Bitwarden SM. If you're reproducing this setup, you'll need to create the following secrets.
+
+## Bitwarden Secrets Manager Setup
+
+### Prerequisites
+
+1. A Bitwarden organization with Secrets Manager enabled
+2. A Machine Account with access to your secrets
+3. An access token for the Machine Account
+
+### Operator Installation
+
+The operator is deployed via Flux from `manifests/infrastructure/controllers/bitwarden-sm-operator/`. It creates:
+- Namespace: `sm-operator-system`
+- CRD: `BitwardenSecret`
+
+### Auth Token Secret
+
+Create the auth token secret in each namespace that needs secrets:
+
+```bash
+kubectl create secret generic bw-auth-token \
+  -n <NAMESPACE> \
+  --from-literal=token="<YOUR_ACCESS_TOKEN>"
+```
+
+### Creating BitwardenSecret Resources
+
+Example `BitwardenSecret` for an app:
+
+```yaml
+apiVersion: k8s.bitwarden.com/v1
+kind: BitwardenSecret
+metadata:
+  name: radarr-secret
+  namespace: media
+spec:
+  organizationId: "<YOUR_ORG_ID>"
+  secretName: radarr-api-key
+  authToken:
+    secretName: bw-auth-token
+    secretKey: token
+  map:
+    - bwSecretId: "<BITWARDEN_SECRET_ID>"
+      secretKeyName: apikey
+```
+
+The operator syncs the Bitwarden secret → Kubernetes secret automatically.
+
+---
 
 ## Required Secrets
 
@@ -33,7 +82,7 @@ This homelab uses External Secrets Operator to pull secrets from Bitwarden. If y
 |-------------|------|---------|
 | `home-assistant-secrets` | (various) | HA secrets.yaml |
 
-## Manual Creation (without External Secrets)
+## Manual Creation (without Bitwarden SM Operator)
 
 If you're not using External Secrets Operator, create secrets manually:
 
@@ -49,21 +98,20 @@ kubectl create secret generic tailscale-auth \
   --from-literal=authkey=tskey-auth-xxxxx
 ```
 
-## Bitwarden Structure
+## Bitwarden Secrets Manager Structure
 
-For External Secrets with Bitwarden, organize secrets as:
+Organize secrets in Bitwarden Secrets Manager:
 
 ```
-Bitwarden Vault/
-└── homelab/
-    ├── k3s-token
-    ├── tailscale-auth
-    ├── pihole-admin
-    ├── radarr-api-key
-    ├── sonarr-api-key
-    ├── prowlarr-api-key
-    ├── transmission-credentials
-    └── home-assistant-secrets
+Project: homelab
+├── k3s-token
+├── tailscale-auth
+├── pihole-admin
+├── radarr-api-key
+├── sonarr-api-key
+├── prowlarr-api-key
+├── transmission-credentials
+└── home-assistant-secrets
 ```
 
-Each item should have custom fields matching the key names above.
+Each secret's ID is used in the `bwSecretId` field of `BitwardenSecret` resources.
