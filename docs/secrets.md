@@ -27,10 +27,10 @@ kubectl create secret generic bw-auth-token \
 
 kubectl annotate secret bw-auth-token -n flux-system \
   reflector.v1.k8s.emberstack.com/reflection-allowed="true" \
-  reflector.v1.k8s.emberstack.com/reflection-auto-enabled="true"
+  reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces="tailscale,media"
 ```
 
-Reflector (deployed via `manifests/infrastructure/controllers/reflector/`) automatically copies this secret to all namespaces.
+Reflector (deployed via `manifests/infrastructure/controllers/reflector/`) copies this secret only to the namespaces listed in the annotation. Add namespaces as needed.
 
 ### Creating BitwardenSecret Resources
 
