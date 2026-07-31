@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: home
+  labels:
+    app: home-assistant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+      annotations:
+        # Attach to IoT VLAN for mDNS/SSDP device discovery
+        # Static IP 10.0.30.220 via Whereabouts (range: 200-239)
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "macvlan-iot-x86",
+            "namespace": "default",
+            "ips": ["10.0.30.220/24"]
+          }]
+    spec:
+      hostname: home-assistant
+      containers:
+      - name: home-assistant
+        image: ghcr.io/home-assistant/home-assistant:2026.7.4
+        env:
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 8123
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        securityContext:
+          privileged: true
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: home-assistant-pvc
+      restartPolicy: Always
+      # Pin to xialing (only node with eno1.300 for macvlan-iot-x86)
+      nodeName: xialing
