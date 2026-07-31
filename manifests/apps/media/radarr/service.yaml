@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr-svc
+  labels:
+    app: media-manager
+    component: radarr
+spec:
+  selector:
+    app: media-manager
+    component: radarr
+  ports:
+  - port: 7878
+    name: webui
+    protocol: TCP

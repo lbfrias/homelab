@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  namespace: media
+  labels:
+    app: media-manager
+    component: radarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: radarr
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: radarr
+    spec:
+      hostname: radarr
+      containers:
+      - image: linuxserver/radarr:5.9.1
+        name: radarr
+        env: 
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 7878
+          name: webui
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: data
+          mountPath: /data
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: radarr-pvc
+      - name: data
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library
+          readOnly: false
+      restartPolicy: Always
