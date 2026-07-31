@@ -56,5 +56,5 @@ spec:
         nfs:
           server: 10.0.0.13
           path: /mnt/data/library
-          readOnly: no
+          readOnly: false
       restartPolicy: Always
