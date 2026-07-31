@@ -27,7 +27,7 @@ spec:
           effect: NoExecute
       initContainers:
         - name: setup-shim
-          image: alpine:3.20
+          image: alpine:3.24
           command:
             - /bin/sh
             - -c
