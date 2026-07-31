@@ -27,7 +27,7 @@ spec:
           effect: NoExecute
       initContainers:
         - name: setup-shim
-          image: nicolaka/netshoot:v0.13
+          image: nicolaka/netshoot:v0.16
           command:
             - /bin/sh
             - -c
