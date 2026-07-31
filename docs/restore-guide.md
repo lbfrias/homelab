@@ -43,6 +43,8 @@ curl -sfL https://get.k3s.io | K3S_TOKEN=<token> sh -s - server \
   --disable servicelb --disable traefik
 ```
 
+> Note: servicelb and traefik disabled because services use macvlan or NodePort.
+
 ### 3. Install Core Infrastructure
 
 ```bash
@@ -59,9 +61,8 @@ flux bootstrap github \
 
 Flux will install (in order):
 1. Multus + Whereabouts CNI
-2. MetalLB
-3. Longhorn
-4. Bitwarden Secrets Manager Operator
+2. Longhorn
+3. Bitwarden Secrets Manager Operator
 
 ### 4. Configure Longhorn Backup Target
 

@@ -136,6 +136,68 @@ This document captures the shared understanding and key decisions for this homel
 - Major upgrades risk drift — reprovision ensures clean state
 - If automation is solid, reprovision is fast
 
+### ADR-009: DNS Architecture (dnsdist + Technitium)
+
+**Status:** Accepted
+
+**Context:** Need a DNS solution for the homelab that provides:
+- Ad-blocking / DNS filtering
+- Authoritative DNS for 2 owned domains
+- High availability across all 3 nodes
+- Per-client visibility (no SNAT)
+- GitOps-friendly configuration
+- Metrics export to Prometheus/Grafana
+
+Previous setup used PiHole with MetalLB load balancing. Evaluating alternatives for the new macvlan-based architecture.
+
+**Decision:** Two-tier DNS with dnsdist (load balancer) + Technitium (DNS server), all on macvlan.
+
+Architecture:
+```
+Clients (2 DNS servers configured)
+    │
+    ▼
+dnsdist x2 (macvlan IPs: TBD) ─── VIPs for clients
+    │
+    ▼ round-robin
+Technitium x3 (macvlan IPs: TBD) ─── one per node
+```
+
+**Rationale:**
+
+*Why not PiHole:*
+- Stateful (SQLite DB) — harder to manage in K8s
+- No authoritative DNS support for owned domains
+
+*Why Technitium over Blocky:*
+- Blocky is forwarding-only; can't serve as authoritative for owned domains
+- Technitium handles both recursive resolution + authoritative zones
+- Full HTTP API enables GitOps (no dependency on web UI)
+- Prometheus metrics via exporter
+
+*Why dnsdist over MetalLB:*
+- MetalLB L2 mode is failover-only (1 active node), not true load balancing
+- Most clients only accept 2 DNS servers, but we have 3 Technitium instances
+- dnsdist provides real round-robin across all 3 backends per VIP
+- dnsdist preserves client source IP natively (no SNAT)
+- Purpose-built for DNS — health checks via actual DNS queries
+
+*Why macvlan for everything:*
+- Per-client visibility requires no SNAT — macvlan delivers this
+- Direct L2 path: client → dnsdist → Technitium (no kube-proxy)
+- Stable IPs (manually assigned) vs ephemeral pod IPs
+- Health checks validate the actual serving interface
+
+*Why 2 dnsdist + 3 Technitium:*
+- 2 VIPs match typical client DNS server limit
+- 3 backends for prod simulation (all nodes participate)
+- Each VIP load balances to all 3 backends
+
+**Trade-offs accepted:**
+- Extra component (dnsdist) vs simpler MetalLB
+- Manual IP management for macvlan interfaces
+- dnsdist config is Lua (less familiar than YAML)
+
 ## Five-Step Provisioning Model
 
 | Step | Name | Tool | Command |
@@ -172,7 +234,7 @@ This document captures the shared understanding and key decisions for this homel
 - Output: Flux watching `manifests/` directory
 
 **Step 5 — Services:** Application deployment (automatic)
-- Flux reconciles infrastructure (MetalLB, Longhorn, Bitwarden SM Operator, Multus)
+- Flux reconciles infrastructure (Longhorn, Bitwarden SM Operator, Multus)
 - Flux reconciles apps (media stack, networking, home automation)
 - Output: All workloads running
 
@@ -218,7 +280,6 @@ Platform-specific requirements discovered during cluster bootstrap:
 - **IoT VLAN:** 10.0.30.0/24 (for Home Assistant device discovery)
 - **K8s Pod Network:** 10.42.0.0/16 (Flannel)
 - **K8s Service Network:** 10.43.0.0/16
-- **MetalLB Pool:** 10.0.0.30-10.0.0.99
 
 ### Static IPs (Infrastructure)
 
@@ -226,14 +287,18 @@ Platform-specific requirements discovered during cluster bootstrap:
 |---------|-----|
 | Home Assistant | TBD (IoT VLAN) |
 | Omada Controller | TBD (LAN) |
-| PiHole | 10.0.0.98, 10.0.0.99 |
+| dnsdist (VIP 1) | TBD |
+| dnsdist (VIP 2) | TBD |
+| Technitium (peggy) | TBD |
+| Technitium (yelena) | TBD |
+| Technitium (xialing) | TBD |
 
 ## Services
 
 ### Current (migrating from homelab-ansible)
 
 - **Media:** Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr, Transmission, Kavita, Mylar3
-- **Network:** PiHole, Tailscale, Omada Controller
+- **Network:** dnsdist, Technitium, Tailscale, Omada Controller
 - **Home Automation:** Home Assistant
 - **Storage:** Longhorn, NFS from xialing
 - **Monitoring:** Prometheus + Grafana (deferred)
@@ -258,11 +323,11 @@ homelab/
 ├── manifests/                   # Step 5: K8s workloads (Flux watches)
 │   ├── flux/                    # Flux bootstrap files (GitRepository, Kustomization)
 │   ├── infrastructure/
-│   │   ├── controllers/         # MetalLB, Longhorn, Bitwarden SM, Multus
-│   │   └── configs/             # Pools, NADs, ClusterSecretStore
+│   │   ├── controllers/         # Longhorn, Bitwarden SM, Multus
+│   │   └── configs/             # NADs, ClusterSecretStore
 │   └── apps/
 │       ├── media/               # Jellyfin, *arr stack
-│       ├── network/             # PiHole, Tailscale, Omada
+│       ├── network/             # dnsdist, Technitium, Tailscale, Omada
 │       └── home/                # Home Assistant
 ├── docs/
 │   ├── restore-guide.md

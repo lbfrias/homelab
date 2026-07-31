@@ -2,7 +2,7 @@
 
 **What to build:** Jellyfin (with hardware transcoding), Radarr, Sonarr, Prowlarr, Bazarr, Transmission, Kavita, Mylar3.
 
-**Blocked by:** Step 5.1 (MetalLB), Step 5.2 (Longhorn)
+**Blocked by:** Step 5.2 (Longhorn)
 
 **Status:** ready
 
@@ -13,6 +13,6 @@
 - [ ] Configure shared NFS mount for media files
 - [ ] Create individual PVCs for each app's config
 - [ ] Jellyfin: GPU passthrough for Intel Quick Sync, node selector for xialing
-- [ ] Configure LoadBalancer services
+- [ ] Configure service access (NodePort or macvlan)
 - [ ] Verify: Jellyfin streams with hardware transcoding
 - [ ] Verify: *arr apps can manage libraries

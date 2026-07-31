@@ -1,5 +1,5 @@
 ---
-# Kustomization for infrastructure controllers (MetalLB, Longhorn, Flux Operator, etc.)
+# Kustomization for infrastructure controllers (Longhorn, Flux Operator, etc.)
 # These install CRDs and operators that other resources depend on
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

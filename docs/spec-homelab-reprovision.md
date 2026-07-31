@@ -38,8 +38,6 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 5. As a homelab operator, I want to test new workloads on `test/*` branches before merging to main, so that I can validate changes without affecting production.
 
-6. As a homelab operator, I want MetalLB providing LoadBalancer IPs, so that services are accessible on the LAN.
-
 6. As a homelab operator, I want Longhorn for persistent storage, so that app data survives pod rescheduling.
 
 7. As a homelab operator, I want Longhorn backups to my NAS, so that I can recover data after disk failures.
@@ -48,7 +46,7 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 9. As a homelab operator, I want Omada Controller running with a macvlan interface, so that it can adopt APs via L2 discovery.
 
-10. As a homelab operator, I want PiHole running with a stable IP, so that I can configure it as my network's DNS.
+10. As a homelab operator, I want Technitium running on all 3 nodes with dnsdist load balancing, so that I have highly available DNS with per-client visibility.
 
 11. As a homelab operator, I want Tailscale for remote access, so that I can manage the cluster from anywhere.
 
@@ -136,7 +134,7 @@ User data lives on the 4TB USB HDD mounted at `/mnt/data`.
 ### K3s Configuration
 
 - All 3 nodes as control plane (embedded etcd, quorum of 2)
-- Disabled components: `servicelb`, `traefik` (replaced by MetalLB, no ingress controller needed initially)
+- Disabled components: `servicelb`, `traefik` (services use macvlan or NodePort)
 - First node uses `--cluster-init`, others join via `--server https://xialing:6443`
 - K3s data directory symlinked to HDD on nodes with external storage
 
@@ -146,11 +144,11 @@ User data lives on the 4TB USB HDD mounted at `/mnt/data`.
 manifests/
 ├── flux-system/             # Flux bootstrap (auto-generated)
 ├── infrastructure/
-│   ├── controllers/         # MetalLB, Longhorn, Bitwarden SM, Multus, Flux Operator
-│   └── configs/             # MetalLB pools, NADs, ResourceSet
+│   ├── controllers/         # Longhorn, Bitwarden SM, Multus, Flux Operator
+│   └── configs/             # NADs, ResourceSet
 └── apps/
     ├── media/               # Jellyfin, *arr stack
-    ├── network/             # PiHole, Tailscale, Omada
+    ├── network/             # dnsdist, Technitium, Tailscale, Omada
     └── home/                # Home Assistant
 ```
 
@@ -182,17 +180,37 @@ The Flux Operator extends base Flux with ResourceSet and ResourceSetInputProvide
 
 - Multus installed via thick plugin (K3s-specific path: `/var/lib/rancher/k3s/agent/etc/cni/net.d/`)
 - Whereabouts IPAM for dynamic IP assignment within defined ranges
-- Static IPs for infrastructure pods (HA, Omada) via pod annotations
+- Static IPs for infrastructure pods (HA, Omada, DNS) via pod annotations
 - macvlan-shim DaemonSet creates host interface for node-to-pod communication
 - NetworkAttachmentDefinitions:
   - `lan-macvlan` — 10.0.0.0/24, parent `eth0`
   - `iot-macvlan` — 10.0.30.0/24, parent `eth0.30` (VLAN tagged)
 
-### MetalLB Configuration
+### DNS Architecture (dnsdist + Technitium)
 
-- L2 mode (no BGP, simple home network)
-- IP pool: 10.0.0.30–10.0.0.99
-- IPAddressPool and L2Advertisement resources
+Two-tier DNS on macvlan for HA with per-client visibility:
+
+**Architecture:**
+```
+Clients (configure dnsdist VIPs as DNS servers)
+    │
+    ▼
+dnsdist x2 (macvlan: TBD) ─── load balancer VIPs
+    │
+    ▼ round-robin
+Technitium x3 (macvlan: TBD) ─── one per node
+```
+
+**Why this design:**
+- **Technitium over PiHole:** Stateless, authoritative DNS for owned domains, full API for GitOps
+- **dnsdist over MetalLB:** Real round-robin (MetalLB L2 is failover-only), preserves client source IP
+- **Macvlan for both tiers:** No SNAT, per-client visibility in Technitium logs/metrics
+- **2 VIPs + 3 backends:** Matches typical client 2-DNS-server limit while using all nodes
+
+**Configuration:**
+- dnsdist: Lua config, forwards to all 3 Technitium backends
+- Technitium: HTTP API for zone management, Prometheus metrics via exporter
+- All pods get static macvlan IPs via annotations
 
 ### Longhorn Configuration
 
@@ -257,9 +275,8 @@ Documented smoke test procedure:
 1. Ansible completes without errors
 2. All nodes show `Ready` in `kubectl get nodes`
 3. Flux reconciliation succeeds (`flux get all` shows ready)
-4. MetalLB assigns IPs to LoadBalancer services
-5. Longhorn UI accessible, all volumes healthy
-6. Bitwarden SM Operator creates expected secrets
+4. Longhorn UI accessible, all volumes healthy
+5. Bitwarden SM Operator creates expected secrets
 
 ### Integration Test: Multus/Macvlan
 
