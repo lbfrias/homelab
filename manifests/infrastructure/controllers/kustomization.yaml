@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - cluster-vars.yaml
   - flux-operator
+  - reflector
   - bitwarden-sm-operator
   - longhorn

@@ -1,0 +1,20 @@
+---
+# Bitwarden SM auth token — create once, mirrored to all namespaces by Reflector
+#
+# Usage:
+#   1. Replace <YOUR_BASE64_ENCODED_TOKEN> with your token (base64 encoded)
+#      To encode: echo -n "your-token" | base64
+#   2. Apply: kubectl apply -f bw-auth-token.yaml
+#
+# Reflector will automatically copy this secret to all namespaces.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bw-auth-token
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+type: Opaque
+data:
+  token: <YOUR_BASE64_ENCODED_TOKEN>

@@ -18,13 +18,19 @@ The operator is deployed via Flux from `manifests/infrastructure/controllers/bit
 
 ### Auth Token Secret
 
-Create the auth token secret in each namespace that needs secrets:
+Create the auth token secret **once** in `flux-system` with Reflector annotations — it will be mirrored to all namespaces automatically:
 
 ```bash
 kubectl create secret generic bw-auth-token \
-  -n <NAMESPACE> \
+  -n flux-system \
   --from-literal=token="<YOUR_ACCESS_TOKEN>"
+
+kubectl annotate secret bw-auth-token -n flux-system \
+  reflector.v1.k8s.emberstack.com/reflection-allowed="true" \
+  reflector.v1.k8s.emberstack.com/reflection-auto-enabled="true"
 ```
+
+Reflector (deployed via `manifests/infrastructure/controllers/reflector/`) automatically copies this secret to all namespaces.
 
 ### Creating BitwardenSecret Resources
 
