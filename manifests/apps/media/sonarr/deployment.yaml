@@ -21,7 +21,7 @@ spec:
     spec:
       hostname: sonarr
       containers:
-      - image: linuxserver/sonarr:4.0.14
+      - image: linuxserver/sonarr:4.0.19
         name: sonarr
         env: 
         - name: PUID
