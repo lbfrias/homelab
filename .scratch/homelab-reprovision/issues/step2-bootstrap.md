@@ -39,3 +39,7 @@
 - Stripped common role to minimal: package cache + essential packages only
 - Removed package installs from cloud-init — Ansible handles all packages now
 - Updated common role to use `ansible_facts['os_family']` syntax (fixes deprecation warnings)
+
+## Pending Tasks
+
+- [ ] Create VLAN interface `eno1.30` on xialing for IoT VLAN (required for Home Assistant macvlan)

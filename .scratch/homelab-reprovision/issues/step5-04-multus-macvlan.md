@@ -28,3 +28,11 @@ Parent interfaces differ by node:
 - x86 (xialing): `eno1` / `eno1.30`
 
 Separate NADs created per interface family: `macvlan-lan` / `macvlan-lan-x86`
+
+## Pending: VLAN Interface Creation
+
+The IoT VLAN NADs (`macvlan-iot`, `macvlan-iot-x86`) require VLAN interfaces on the host that **do not yet exist**:
+- `eno1.30` on xialing (required for Home Assistant)
+- `eth0.30` on peggy/yelena (optional, only if IoT workloads run there)
+
+This must be added to Ansible bootstrap (Step 2) before deploying Home Assistant.

@@ -311,6 +311,8 @@ Platform-specific requirements discovered during cluster bootstrap:
 
 **NAD selection:** Use `macvlan-lan` / `macvlan-iot` for RPi nodes, `macvlan-lan-x86` / `macvlan-iot-x86` for xialing.
 
+**⚠️ VLAN interfaces not yet created:** The IoT VLAN interfaces (`eth0.30`, `eno1.30`) must be created on hosts before IoT NADs will work. Only xialing needs this for Home Assistant. See Step 2 bootstrap tasks.
+
 ### Macvlan IP Ranges (Whereabouts IPAM)
 
 | Network | Range | Notes |

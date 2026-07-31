@@ -58,6 +58,36 @@ IP range: `10.0.0.200` - `10.0.0.239` (managed by Whereabouts IPAM)
 
 IP range: `10.0.30.200` - `10.0.30.239` (managed by Whereabouts IPAM)
 
+### VLAN Interface Prerequisite
+
+**VLAN-tagged NADs require the host to have the VLAN interface pre-created.** The IoT NADs reference `eth0.30` / `eno1.30`, which must exist before pods can use them.
+
+If the interface doesn't exist, pods fail with:
+```
+master "eth0.30" not found
+```
+
+VLAN interfaces are created during Ansible bootstrap (Step 2). Currently only `eno1.30` on xialing is needed for Home Assistant.
+
+### Scheduling Limitation
+
+**A pod with a NAD annotation cannot dynamically schedule to all nodes.** Each NAD is tied to a specific parent interface. If a pod lands on an incompatible node, it fails:
+
+```
+Failed to create pod sandbox: ... master "eth0" not found
+```
+
+The Kubernetes scheduler is unaware of NAD compatibility — you must enforce it yourself.
+
+**Options:**
+
+| Approach | When to Use |
+|----------|-------------|
+| Node affinity | Single replica on a known node family |
+| Separate Deployments | One per node family, each with matching NAD |
+| DaemonSet | Run on all nodes, each pod uses local NAD |
+| Skip macvlan | Use Service/Ingress if L2 access not required |
+
 ## Usage Examples
 
 ### Basic: Auto-assigned IP
