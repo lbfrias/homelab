@@ -4,13 +4,17 @@
 
 **Blocked by:** Step 5.2 (Longhorn), Step 5.9 (Media Stack)
 
-**Status:** ready
+**Status:** done
 
 ## Tasks
 
-- [ ] Verify Longhorn backup target shows backups
-- [ ] Test restore: Delete prowlarr PVC (non-critical)
-- [ ] Restore prowlarr volume from backup
-- [ ] Verify prowlarr starts with restored data
-- [ ] Update `docs/restore-guide.md`
-- [ ] Document restore test results and date
+- [x] Verify Longhorn backup target shows backups
+- [x] Test restore: Delete prowlarr PVC (non-critical)
+- [x] Restore prowlarr volume from backup
+- [x] Verify prowlarr starts with restored data
+- [x] Update `docs/restore-guide.md`
+- [x] Document restore test results and date
+
+## Resolution
+
+Longhorn volume restore validated — all media stack volumes restored successfully. Restore guide updated and streamlined (2026-08-01).

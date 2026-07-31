@@ -4,7 +4,7 @@
 
 **Blocked by:** Step 5.3 (Bitwarden Secrets)
 
-**Status:** in-progress
+**Status:** done
 
 ## Design Decision
 
@@ -17,10 +17,14 @@ Using a simple **subnet router deployment** instead of Tailscale Operator:
 
 - [x] Create Tailscale subnet router in `manifests/apps/network/tailscale/`
 - [x] Create BitwardenSecret for Tailscale auth key
-- [ ] Add Bitwarden secret IDs (org ID + auth key secret ID) to bitwardensecret.yaml
-- [ ] Enable apps kustomization in `manifests/kustomization.yaml`
-- [ ] Create Flux Kustomization for apps in `manifests/infrastructure/kustomizations.yaml`
-- [ ] Deploy and verify: Approve routes in Tailscale admin, test remote access
+- [x] Add Bitwarden secret IDs (org ID + auth key secret ID) to bitwardensecret.yaml
+- [x] Enable apps kustomization in `manifests/kustomization.yaml`
+- [x] Create Flux Kustomization for apps in `manifests/infrastructure/kustomizations.yaml`
+- [x] Deploy and verify: Approve routes in Tailscale admin, test remote access
+
+## Resolution
+
+Tailscale subnet router deployed and operational (2026-08-01).
 
 ## Files Created
 
