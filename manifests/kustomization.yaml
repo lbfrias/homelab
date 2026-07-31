@@ -2,5 +2,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   # flux-system is self-managed by the bootstrap Kustomization, don't include here
+  # apps is managed by the Flux Kustomization CR in infrastructure/kustomizations.yaml (with variable substitution)
   - infrastructure
-  - apps
