@@ -1,0 +1,84 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ippools.whereabouts.cni.cncf.io
+spec:
+  group: whereabouts.cni.cncf.io
+  names:
+    kind: IPPool
+    listKind: IPPoolList
+    plural: ippools
+    singular: ippool
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: IPPool is the Schema for Whereabouts IP address pools
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              properties:
+                allocations:
+                  additionalProperties:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      podref:
+                        type: string
+                    required:
+                      - id
+                  type: object
+                range:
+                  type: string
+              required:
+                - allocations
+                - range
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: overlappingrangeipreservations.whereabouts.cni.cncf.io
+spec:
+  group: whereabouts.cni.cncf.io
+  names:
+    kind: OverlappingRangeIPReservation
+    listKind: OverlappingRangeIPReservationList
+    plural: overlappingrangeipreservations
+    singular: overlappingrangeipreservation
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: OverlappingRangeIPReservation is for cluster-wide IP reservations
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              properties:
+                containerid:
+                  type: string
+                podref:
+                  type: string
+              required:
+                - containerid

@@ -1,0 +1,80 @@
+---
+# NetworkAttachmentDefinition for LAN (10.0.0.0/24)
+# Parent interface varies by node: eth0 (RPi), eno1 (x86)
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-lan
+  namespace: default
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "macvlan-lan",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "whereabouts",
+        "range": "10.0.0.0/24",
+        "exclude": [
+          "10.0.0.1/32",
+          "10.0.0.2/32",
+          "10.0.0.3/32",
+          "10.0.0.4/32",
+          "10.0.0.5/32",
+          "10.0.0.6/32",
+          "10.0.0.7/32",
+          "10.0.0.8/32",
+          "10.0.0.9/32",
+          "10.0.0.10/32",
+          "10.0.0.11/32",
+          "10.0.0.12/32",
+          "10.0.0.13/32",
+          "10.0.0.14/32",
+          "10.0.0.15/32"
+        ],
+        "range_start": "10.0.0.200",
+        "range_end": "10.0.0.239"
+      }
+    }
+---
+# NetworkAttachmentDefinition for LAN on x86 nodes (xialing)
+# Uses eno1 instead of eth0
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-lan-x86
+  namespace: default
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "macvlan-lan-x86",
+      "type": "macvlan",
+      "master": "eno1",
+      "mode": "bridge",
+      "ipam": {
+        "type": "whereabouts",
+        "range": "10.0.0.0/24",
+        "exclude": [
+          "10.0.0.1/32",
+          "10.0.0.2/32",
+          "10.0.0.3/32",
+          "10.0.0.4/32",
+          "10.0.0.5/32",
+          "10.0.0.6/32",
+          "10.0.0.7/32",
+          "10.0.0.8/32",
+          "10.0.0.9/32",
+          "10.0.0.10/32",
+          "10.0.0.11/32",
+          "10.0.0.12/32",
+          "10.0.0.13/32",
+          "10.0.0.14/32",
+          "10.0.0.15/32"
+        ],
+        "range_start": "10.0.0.200",
+        "range_end": "10.0.0.239"
+      }
+    }

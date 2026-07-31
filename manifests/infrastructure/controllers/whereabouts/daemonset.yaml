@@ -1,0 +1,77 @@
+---
+# Whereabouts IPAM DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: whereabouts
+  namespace: kube-system
+  labels:
+    app: whereabouts
+    tier: node
+spec:
+  selector:
+    matchLabels:
+      name: whereabouts
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: whereabouts
+        app: whereabouts
+        tier: node
+    spec:
+      hostNetwork: true
+      serviceAccountName: whereabouts
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      containers:
+        - name: whereabouts
+          image: ghcr.io/k8snetworkplumbingwg/whereabouts:v0.9.4
+          command:
+            - /ip-control-loop
+            - "-log-level"
+            - "debug"
+          env:
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "100m"
+              memory: "200Mi"
+          volumeMounts:
+            - name: cni-net-dir
+              mountPath: /host/etc/cni/net.d
+            - name: cni-bin-dir
+              mountPath: /host/opt/cni/bin
+      initContainers:
+        - name: install-whereabouts
+          image: ghcr.io/k8snetworkplumbingwg/whereabouts:v0.9.4
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /whereabouts /host/opt/cni/bin/whereabouts
+          volumeMounts:
+            - name: cni-bin-dir
+              mountPath: /host/opt/cni/bin
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "10Mi"
+      volumes:
+        - name: cni-net-dir
+          hostPath:
+            path: /var/lib/rancher/k3s/agent/etc/cni/net.d
+        - name: cni-bin-dir
+          hostPath:
+            path: /var/lib/rancher/k3s/data/current/bin

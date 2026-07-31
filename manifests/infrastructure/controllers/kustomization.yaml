@@ -6,3 +6,5 @@ resources:
   - reflector
   - bitwarden-sm-operator
   - longhorn
+  - multus-cni
+  - whereabouts
