@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prowlarr
+  namespace: media
+  labels:
+    app: media-manager
+    component: prowlarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: prowlarr
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: prowlarr
+    spec:
+      hostname: prowlarr
+      containers:
+      - image: linuxserver/prowlarr:version-1.32.2.4987
+        name: prowlarr
+        env: 
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 9696
+          name: webui
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: prowlarr-pvc
+      restartPolicy: Always

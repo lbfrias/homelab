@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - radarr
   - sonarr
+  - prowlarr
   - jellyfin
   - transmission
   - namespace.yaml
