@@ -84,7 +84,7 @@ The operator syncs the Bitwarden secret → Kubernetes secret automatically.
 
 ## Manual Creation (without Bitwarden SM Operator)
 
-If you're not using External Secrets Operator, create secrets manually:
+If you're not using Bitwarden Secrets Manager Operator, create secrets manually:
 
 ```bash
 # Example: Create radarr API key secret

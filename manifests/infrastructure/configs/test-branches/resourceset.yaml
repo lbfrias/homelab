@@ -19,7 +19,7 @@ spec:
         namespace: flux-system
       spec:
         interval: 1m
-        url: https://github.com/lbfrias/homelab
+        url: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}
         ref:
           branch: << inputs.branch >>
         secretRef:

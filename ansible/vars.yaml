@@ -1,0 +1,37 @@
+# Committed configuration — safe to share publicly
+# Secrets go in secrets.local.yaml (gitignored)
+#
+# NOTE: Node IPs and subnets also appear in manifests/flux-system/cluster-vars.yaml
+#       Keep both files in sync when reprovisioning with different values.
+#
+# Usage (from ansible/ dir):
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml site.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/bootstrap.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/k3s.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/flux.yaml
+
+# --- SSH & User Configuration ---
+username: levin
+ssh_public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPnDDatDfSZ4BkxN/iTa1lTpk/LfsDnl+fVFavKZnuSA
+ssh_port: 40022
+
+# --- Ansible Connection ---
+ansible_user: levin
+ansible_port: 40022
+
+# --- Network Configuration ---
+node_ips:
+  peggy: 10.0.0.11
+  yelena: 10.0.0.12
+  xialing: 10.0.0.13
+
+nfs_export_networks:
+  - "10.0.0.0/24"
+  - "10.42.0.0/16"
+
+# --- SMB Configuration ---
+smb_force_user: levin
+
+# --- GitHub / Flux Configuration ---
+github_owner: lbfrias
+github_repo: homelab

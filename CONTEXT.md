@@ -94,13 +94,13 @@ This document captures the shared understanding and key decisions for this homel
 - Auto-reconciliation corrects drift
 - `kubectl apply` as emergency fallback
 
-### ADR-006: External Secrets with Bitwarden
+### ADR-006: Bitwarden Secrets Manager
 
 **Status:** Accepted
 
 **Context:** Repo is public. Secrets cannot be committed, even encrypted.
 
-**Decision:** External Secrets Operator pulling from Bitwarden. README documents required secrets for others.
+**Decision:** Bitwarden Secrets Manager Operator syncing secrets from Bitwarden SM. README documents required secrets for others.
 
 **Rationale:**
 - Public repo = no secrets in Git
@@ -172,7 +172,7 @@ This document captures the shared understanding and key decisions for this homel
 - Output: Flux watching `manifests/` directory
 
 **Step 5 — Services:** Application deployment (automatic)
-- Flux reconciles infrastructure (MetalLB, Longhorn, ESO, Multus)
+- Flux reconciles infrastructure (MetalLB, Longhorn, Bitwarden SM Operator, Multus)
 - Flux reconciles apps (media stack, networking, home automation)
 - Output: All workloads running
 
@@ -258,7 +258,7 @@ homelab/
 ├── manifests/                   # Step 5: K8s workloads (Flux watches)
 │   ├── flux/                    # Flux bootstrap files (GitRepository, Kustomization)
 │   ├── infrastructure/
-│   │   ├── controllers/         # MetalLB, Longhorn, ESO, Multus
+│   │   ├── controllers/         # MetalLB, Longhorn, Bitwarden SM, Multus
 │   │   └── configs/             # Pools, NADs, ClusterSecretStore
 │   └── apps/
 │       ├── media/               # Jellyfin, *arr stack
@@ -284,7 +284,11 @@ homelab/
 ## Conventions
 
 - **YAML files:** Use `.yaml` extension (not `.yml`)
-- **Sensitive values:** Never commit secrets. Use `vars.local.yaml` (gitignored) for sensitive data:
-  - Copy from `vars.local.example.yaml` as template
-  - Pass to playbooks via `-e @vars.local.yaml`
-  - Includes: SSH credentials, node IPs, GitHub tokens, SMB passwords
+- **Configuration split:**
+  - `ansible/vars.yaml` — committed, contains IPs, usernames, public config
+  - `ansible/secrets.local.yaml` — gitignored, contains tokens only (copy from `secrets.local.example.yaml`)
+  - Pass both to playbooks: `-e @vars.yaml -e @secrets.local.yaml`
+- **DRY config:** Node IPs are defined in two places that must stay in sync:
+  - `ansible/vars.yaml` — source of truth for Ansible
+  - `manifests/flux-system/cluster-vars.yaml` — ConfigMap for Flux substitution
+  - K8s manifests use `${XIALING_IP}` etc., substituted by Flux `postBuild`

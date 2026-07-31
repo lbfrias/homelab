@@ -10,7 +10,7 @@ metadata:
     fluxcd.controlplane.io/reconcileEvery: "5m"
 spec:
   type: GitHubBranch
-  url: https://github.com/lbfrias/homelab
+  url: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}
   # No secretRef needed for public repos (uses unauthenticated GitHub API)
   # Add secretRef if you hit rate limits (60 req/hr unauthenticated)
   filter:

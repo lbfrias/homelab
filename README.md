@@ -18,15 +18,27 @@ Infrastructure as Code for my personal homelab — a 3-node K3s cluster with Git
 # After nodes are provisioned (Step 1), from ansible/ directory:
 
 # Run all steps (2-4) at once:
-ansible-playbook -e @vars.local.yaml site.yaml
+ansible-playbook -e @vars.yaml -e @secrets.local.yaml site.yaml
 
 # Or run each step individually:
-ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml  # Step 2
-ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml        # Step 3
-ansible-playbook -e @vars.local.yaml playbooks/flux.yaml       # Step 4
+ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/bootstrap.yaml  # Step 2
+ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/k3s.yaml        # Step 3
+ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/flux.yaml       # Step 4
 
 # Step 5 is automatic — Flux reconciles manifests/
 ```
+
+## Configuration
+
+Configuration is split between Ansible (node provisioning) and Flux (K8s manifests):
+
+| File | Purpose | Committed? |
+|------|---------|------------|
+| `ansible/vars.yaml` | IPs, usernames, SSH key, subnets | ✅ Yes |
+| `ansible/secrets.local.yaml` | GitHub token (copy from `secrets.local.example.yaml`) | ❌ No |
+| `manifests/flux-system/cluster-vars.yaml` | IPs, subnets for K8s manifests | ✅ Yes |
+
+**If reprovisioning with different IPs or subnets**, update both `vars.yaml` and `cluster-vars.yaml` to keep them in sync. The K8s manifests use Flux variable substitution (`${XIALING_IP}`, `${LAN_CIDR}`, etc.) to reference values from the ConfigMap.
 
 ## Hardware
 
@@ -68,7 +80,7 @@ homelab/
 
 ## Secrets
 
-This repo uses External Secrets Operator with Bitwarden. If you're reproducing this setup, see [docs/secrets.md](./docs/secrets.md) for the list of required secrets you'll need to create.
+This repo uses Bitwarden Secrets Manager Operator to sync secrets from Bitwarden SM. If you're reproducing this setup, see [docs/secrets.md](./docs/secrets.md) for the list of required secrets you'll need to create.
 
 ## License
 

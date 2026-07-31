@@ -35,6 +35,10 @@ spec:
   prune: true
   dependsOn:
     - name: infrastructure-controllers
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
 ---
 # Kustomization for apps (depends on infrastructure)
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -53,3 +57,7 @@ spec:
   prune: true
   dependsOn:
     - name: infrastructure-configs
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars

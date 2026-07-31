@@ -29,7 +29,7 @@ spec:
             - name: TS_HOSTNAME
               value: "homelab-subnet-router"
             - name: TS_ROUTES
-              value: "10.0.0.0/24,10.0.30.0/24"
+              value: "${LAN_CIDR},${IOT_VLAN_CIDR}"
             - name: TS_USERSPACE
               value: "true"
             - name: TS_KUBE_SECRET

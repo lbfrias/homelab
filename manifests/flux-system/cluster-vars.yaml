@@ -1,0 +1,22 @@
+---
+# Cluster-wide configuration values
+# Used by Flux postBuild substitution in Kustomizations
+#
+# NOTE: Node IPs and subnets also appear in ansible/vars.yaml
+#       Keep both files in sync when reprovisioning with different values.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-vars
+  namespace: flux-system
+data:
+  # Node IPs
+  PEGGY_IP: "10.0.0.11"
+  YELENA_IP: "10.0.0.12"
+  XIALING_IP: "10.0.0.13"
+  # Subnets
+  LAN_CIDR: "10.0.0.0/24"
+  IOT_VLAN_CIDR: "10.0.30.0/24"
+  # GitHub
+  GITHUB_OWNER: "lbfrias"
+  GITHUB_REPO: "homelab"

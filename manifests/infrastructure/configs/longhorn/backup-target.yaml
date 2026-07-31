@@ -7,6 +7,6 @@ metadata:
   name: default
   namespace: longhorn-system
 spec:
-  backupTargetURL: "nfs://10.0.0.13:/mnt/data/library/longhorn_backup"
+  backupTargetURL: "nfs://${XIALING_IP}:/mnt/data/library/longhorn_backup"
   credentialSecret: ""
   pollInterval: 5m0s

@@ -1,5 +1,5 @@
-# Local sensitive configuration (DO NOT COMMIT)
-ansible/vars.local.yaml
+# Local secrets (DO NOT COMMIT)
+ansible/secrets.local.yaml
 
 # Local agent instructions (machine-specific)
 .agent-instructions.local.md

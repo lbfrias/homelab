@@ -61,7 +61,7 @@ Flux will install (in order):
 1. Multus + Whereabouts CNI
 2. MetalLB
 3. Longhorn
-4. External Secrets Operator
+4. Bitwarden Secrets Manager Operator
 
 ### 4. Configure Longhorn Backup Target
 
