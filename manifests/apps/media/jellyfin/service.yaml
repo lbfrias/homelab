@@ -1,0 +1,40 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin-tcp
+  namespace: media
+  labels:
+    app: media-manager
+    component: jellyfin
+spec:
+  selector:
+    app: media-manager
+    component: jellyfin
+  ports:
+  - port: 8096
+    name: http
+    protocol: TCP
+  - port: 8920
+    name: https
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin-udp
+  namespace: media
+  labels:
+    app: media-manager
+    component: jellyfin
+spec:
+  selector:
+    app: media-manager
+    component: jellyfin
+  ports:
+  - port: 7359
+    name: client-disc
+    protocol: UDP
+  - port: 1900
+    name: service-disc
+    protocol: UDP
