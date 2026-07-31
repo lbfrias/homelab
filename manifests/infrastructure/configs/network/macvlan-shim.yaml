@@ -27,16 +27,14 @@ spec:
           effect: NoExecute
       initContainers:
         - name: setup-shim
-          image: alpine:3.20
+          image: nicolaka/netshoot:v0.13
           command:
             - /bin/sh
             - -c
             - |
               set -ex
-              apk add --no-cache iproute2
               
               # Detect parent interface (eth0 for RPi, eno1 for x86)
-              # Using nsenter to run in the host network namespace
               if nsenter -t 1 -n ip link show eno1 >/dev/null 2>&1; then
                 PARENT="eno1"
               else
