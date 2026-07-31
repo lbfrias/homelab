@@ -1,0 +1,67 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazarr
+  namespace: media
+  labels:
+    app: media-manager
+    component: bazarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: bazarr
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: bazarr
+    spec:
+      hostname: bazarr
+      containers:
+      - image: linuxserver/bazarr:1.6.0
+        name: bazarr
+        env: 
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: UMASK
+          value: "022"
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 6767
+          name: webui
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: movies
+          mountPath: /data/movies
+        - name: tvseries
+          mountPath: /data/tv
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: bazarr-pvc
+      - name: movies
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/movies
+      - name: tvseries
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/tvseries
+      restartPolicy: Always
