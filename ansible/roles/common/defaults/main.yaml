@@ -12,5 +12,7 @@ common_packages:
 common_packages_debian:
   - glances
   - nfs-common
+  - open-iscsi  # Required for Longhorn
 common_packages_redhat:
   - epel-release
+  - iscsi-initiator-utils  # Required for Longhorn

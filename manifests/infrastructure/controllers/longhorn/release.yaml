@@ -1,0 +1,41 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  interval: 1h
+  url: https://charts.longhorn.io
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: longhorn
+      version: "1.8.2"
+      sourceRef:
+        kind: HelmRepository
+        name: longhorn
+  install:
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  values:
+    persistence:
+      # 2 replicas — xialing has ~79GB vs 1TB on RPis
+      defaultClassReplicaCount: 2
+    defaultSettings:
+      # Backup target: NFS on xialing
+      backupTarget: nfs://10.0.0.13:/mnt/data/library/longhorn_backup
+      # Create default backup on PVC deletion
+      backupTargetCredentialSecret: ""
+      # Store data on HDDs mounted at /var (per ADR-002)
+      defaultDataPath: /var/lib/longhorn
+      # Replica auto-balance for even distribution
+      replicaAutoBalance: best-effort

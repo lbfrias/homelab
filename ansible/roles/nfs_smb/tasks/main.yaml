@@ -17,6 +17,12 @@
     state: directory
     mode: '0755'
 
+- name: Ensure Longhorn backup directory exists
+  ansible.builtin.file:
+    path: "{{ nfs_export_path }}/library/longhorn_backup"
+    state: directory
+    mode: '0755'
+
 - name: Configure NFS exports
   ansible.builtin.lineinfile:
     path: /etc/exports
@@ -49,17 +55,3 @@
     name: smb
     enabled: true
     state: started
-
-- name: Open firewall for NFS
-  ansible.posix.firewalld:
-    service: nfs
-    permanent: true
-    state: enabled
-    immediate: true
-
-- name: Open firewall for Samba
-  ansible.posix.firewalld:
-    service: samba
-    permanent: true
-    state: enabled
-    immediate: true

@@ -50,3 +50,10 @@
   ansible.builtin.dnf:
     name: "{{ common_packages }}"
     state: present
+
+# Longhorn requires iscsid running
+- name: Enable and start iscsid service
+  ansible.builtin.systemd:
+    name: iscsid
+    state: started
+    enabled: true
