@@ -24,10 +24,9 @@
     mode: '0755'
 
 - name: Configure NFS exports
-  ansible.builtin.lineinfile:
-    path: /etc/exports
-    line: "{{ nfs_export_path }} {{ nfs_export_network }}({{ nfs_export_options }})"
-    create: true
+  ansible.builtin.template:
+    src: exports.j2
+    dest: /etc/exports
     mode: '0644'
   notify: Reload NFS exports
 

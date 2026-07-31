@@ -23,7 +23,10 @@ node_ips:
   peggy: 10.0.0.x
   yelena: 10.0.0.x
 
-nfs_export_network: "10.0.0.0/24"
+# NFS export networks (list) — include both LAN and K8s pod network
+nfs_export_networks:
+  - "10.0.0.0/24"    # LAN
+  - "10.42.0.0/16"   # K8s pod network (Flannel)
 
 # --- SMB Configuration ---
 smb_force_user: myuser

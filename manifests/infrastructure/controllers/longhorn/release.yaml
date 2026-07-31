@@ -31,10 +31,7 @@ spec:
       # 2 replicas — xialing has ~79GB vs 1TB on RPis
       defaultClassReplicaCount: 2
     defaultSettings:
-      # Backup target: NFS on xialing
-      backupTarget: nfs://10.0.0.13:/mnt/data/library/longhorn_backup
-      # Create default backup on PVC deletion
-      backupTargetCredentialSecret: ""
+      # Backup target managed via BackupTarget CR (configs/longhorn/backup-target.yaml)
       # Store data on HDDs mounted at /var (per ADR-002)
       defaultDataPath: /var/lib/longhorn
       # Replica auto-balance for even distribution

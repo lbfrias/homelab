@@ -1,0 +1,5 @@
+# NFS exports - managed by Ansible
+# {{ ansible_managed }}
+{% for network in nfs_export_networks %}
+{{ nfs_export_path }} {{ network }}({{ nfs_export_options }})
+{% endfor %}

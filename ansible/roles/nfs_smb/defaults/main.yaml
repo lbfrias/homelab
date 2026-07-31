@@ -1,7 +1,9 @@
 ---
 # NFS export configuration
 nfs_export_path: /mnt/data
-# nfs_export_network comes from -e @vars.local.yaml
+# nfs_export_networks is a list of networks to export to
+# Example: ["10.0.0.0/24", "10.42.0.0/16"]
+# Comes from -e @vars.local.yaml
 nfs_export_options: "rw,sync,no_subtree_check,no_root_squash"
 
 # SMB share configuration
