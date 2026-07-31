@@ -1,0 +1,91 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: media
+  labels:
+    app: media-manager
+    component: transmission
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: transmission
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: transmission
+    spec:
+      hostname: transmission
+      containers:
+      - image: linuxserver/transmission:4.1.2
+        name: transmission
+        env: 
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 9091
+          name: webui
+          protocol: TCP
+        - containerPort: 51413
+          name: torrent-tcp
+          protocol: TCP
+        - containerPort: 51413
+          name: torrent-udp
+          protocol: UDP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: data
+          mountPath: /downloads
+      - image: jesec/flood:4.14.3
+        name: flood
+        command:
+        - "flood"
+        - "--trurl"
+        - "http://localhost:9091/transmission/rpc"
+        - "--truser"
+        - "\"\""
+        - "--trpass"
+        - "\"\""
+        - --auth
+        - "none"
+        env:
+        - name: HOME
+          value: /config
+        ports:
+        - containerPort: 3000
+          name: flood-webui
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: transmission-pvc
+      - name: data
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/downloads
+          readOnly: no
+      restartPolicy: Always
