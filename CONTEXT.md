@@ -355,5 +355,5 @@ homelab/
   - Pass both to playbooks: `-e @vars.yaml -e @secrets.local.yaml`
 - **DRY config:** Node IPs are defined in two places that must stay in sync:
   - `ansible/vars.yaml` — source of truth for Ansible
-  - `manifests/flux-system/cluster-vars.yaml` — ConfigMap for Flux substitution
+  - `manifests/infrastructure/controllers/cluster-vars.yaml` — ConfigMap for Flux substitution
   - K8s manifests use `${XIALING_IP}` etc., substituted by Flux `postBuild`

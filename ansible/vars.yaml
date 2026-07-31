@@ -1,7 +1,7 @@
 # Committed configuration — safe to share publicly
 # Secrets go in secrets.local.yaml (gitignored)
 #
-# NOTE: Node IPs and subnets also appear in manifests/flux-system/cluster-vars.yaml
+# NOTE: Node IPs and subnets also appear in manifests/infrastructure/controllers/cluster-vars.yaml
 #       Keep both files in sync when reprovisioning with different values.
 #
 # Usage (from ansible/ dir):

@@ -36,7 +36,7 @@ Configuration is split between Ansible (node provisioning) and Flux (K8s manifes
 |------|---------|------------|
 | `ansible/vars.yaml` | IPs, usernames, SSH key, subnets | ✅ Yes |
 | `ansible/secrets.local.yaml` | GitHub token (copy from `secrets.local.example.yaml`) | ❌ No |
-| `manifests/flux-system/cluster-vars.yaml` | IPs, subnets for K8s manifests | ✅ Yes |
+| `manifests/infrastructure/controllers/cluster-vars.yaml` | IPs, subnets for K8s manifests | ✅ Yes |
 
 **If reprovisioning with different IPs or subnets**, update both `vars.yaml` and `cluster-vars.yaml` to keep them in sync. The K8s manifests use Flux variable substitution (`${XIALING_IP}`, `${LAN_CIDR}`, etc.) to reference values from the ConfigMap.
 

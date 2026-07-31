@@ -26,7 +26,7 @@ Shared values live in two files that **must stay in sync**:
 | File | Used by |
 |------|---------|
 | `ansible/vars.yaml` | Ansible (Steps 1-4) |
-| `manifests/flux-system/cluster-vars.yaml` | Flux substitution (Step 5) |
+| `manifests/infrastructure/controllers/cluster-vars.yaml` | Flux substitution (Step 5) |
 
 K8s manifests use `${VAR}` syntax (e.g., `${XIALING_IP}`, `${LAN_CIDR}`) which Flux substitutes at reconciliation time from the `cluster-vars` ConfigMap.
 
