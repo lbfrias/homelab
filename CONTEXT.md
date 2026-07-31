@@ -281,6 +281,23 @@ Platform-specific requirements discovered during cluster bootstrap:
 - **K8s Pod Network:** 10.42.0.0/16 (Flannel)
 - **K8s Service Network:** 10.43.0.0/16
 
+### Macvlan Parent Interfaces
+
+| Node | LAN Interface | IoT VLAN Interface |
+|------|---------------|-------------------|
+| peggy (RPi) | eth0 | eth0.30 |
+| yelena (RPi) | eth0 | eth0.30 |
+| xialing (x86) | eno1 | eno1.30 |
+
+**NAD selection:** Use `macvlan-lan` / `macvlan-iot` for RPi nodes, `macvlan-lan-x86` / `macvlan-iot-x86` for xialing.
+
+### Macvlan IP Ranges (Whereabouts IPAM)
+
+| Network | Range | Notes |
+|---------|-------|-------|
+| LAN | 10.0.0.200 - 10.0.0.239 | Excludes node IPs (10.0.0.11-15), gateway |
+| IoT VLAN | 10.0.30.200 - 10.0.30.239 | Excludes gateway |
+
 ### Static IPs (Infrastructure)
 
 | Service | IP |

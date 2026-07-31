@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - nad-lan.yaml
   - nad-iot.yaml
-  - macvlan-shim.yaml
