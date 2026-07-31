@@ -24,15 +24,13 @@ Used RKE2 Helm charts per K3s docs (docs.k3s.io/networking/multus-ipams):
 - Key paths for K3s: `/var/lib/rancher/k3s/data/cni/` (binaries), `/var/lib/rancher/k3s/agent/etc/cni/net.d` (config)
 
 Parent interfaces differ by node:
-- RPi (peggy, yelena): `eth0` / `eth0.30`
-- x86 (xialing): `eno1` / `eno1.30`
+- RPi (peggy, yelena): `eth0` / `eth0.300`
+- x86 (xialing): `eno1` / `eno1.300`
 
 Separate NADs created per interface family: `macvlan-lan` / `macvlan-lan-x86`
 
-## Pending: VLAN Interface Creation
+## VLAN Interface Creation
 
-The IoT VLAN NADs (`macvlan-iot`, `macvlan-iot-x86`) require VLAN interfaces on the host that **do not yet exist**:
-- `eno1.30` on xialing (required for Home Assistant)
-- `eth0.30` on peggy/yelena (optional, only if IoT workloads run there)
-
-This must be added to Ansible bootstrap (Step 2) before deploying Home Assistant.
+The IoT VLAN NADs (`macvlan-iot`, `macvlan-iot-x86`) require VLAN interfaces on the host:
+- `eno1.300` on xialing — created via Ansible bootstrap (Step 2) using `vlan_interface` role
+- `eth0.300` on peggy/yelena — optional, only if IoT workloads run there

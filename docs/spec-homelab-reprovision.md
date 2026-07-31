@@ -184,7 +184,7 @@ The Flux Operator extends base Flux with ResourceSet and ResourceSetInputProvide
 - macvlan-shim DaemonSet creates host interface for node-to-pod communication
 - NetworkAttachmentDefinitions:
   - `lan-macvlan` — 10.0.0.0/24, parent `eth0`
-  - `iot-macvlan` — 10.0.30.0/24, parent `eth0.30` (VLAN tagged)
+  - `iot-macvlan` — 10.0.30.0/24, parent `eth0.300` (VLAN 300 tagged)
 
 ### DNS Architecture (dnsdist + Technitium)
 

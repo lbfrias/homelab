@@ -42,4 +42,4 @@
 
 ## Pending Tasks
 
-- [ ] Create VLAN interface `eno1.30` on xialing for IoT VLAN (required for Home Assistant macvlan)
+- [x] Create VLAN interface `eno1.300` on xialing for IoT VLAN (required for Home Assistant macvlan)

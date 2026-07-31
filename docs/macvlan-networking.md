@@ -53,21 +53,21 @@ IP range: `10.0.0.200` - `10.0.0.239` (managed by Whereabouts IPAM)
 
 | NAD Name | Parent Interface | Use On |
 |----------|------------------|--------|
-| `macvlan-iot` | eth0.30 | peggy, yelena (RPi) |
-| `macvlan-iot-x86` | eno1.30 | xialing (x86) |
+| `macvlan-iot` | eth0.300 | peggy, yelena (RPi) |
+| `macvlan-iot-x86` | eno1.300 | xialing (x86) |
 
 IP range: `10.0.30.200` - `10.0.30.239` (managed by Whereabouts IPAM)
 
 ### VLAN Interface Prerequisite
 
-**VLAN-tagged NADs require the host to have the VLAN interface pre-created.** The IoT NADs reference `eth0.30` / `eno1.30`, which must exist before pods can use them.
+**VLAN-tagged NADs require the host to have the VLAN interface pre-created.** The IoT NADs reference `eth0.300` / `eno1.300`, which must exist before pods can use them.
 
 If the interface doesn't exist, pods fail with:
 ```
-master "eth0.30" not found
+master "eth0.300" not found
 ```
 
-VLAN interfaces are created during Ansible bootstrap (Step 2). Currently only `eno1.30` on xialing is needed for Home Assistant.
+The `eno1.300` VLAN interface on xialing is created via the `vlan_interface` Ansible role in bootstrap (Step 2). Run `ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml --tags vlan` to create it.
 
 ### Scheduling Limitation
 

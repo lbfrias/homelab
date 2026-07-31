@@ -305,13 +305,13 @@ Platform-specific requirements discovered during cluster bootstrap:
 
 | Node | LAN Interface | IoT VLAN Interface |
 |------|---------------|-------------------|
-| peggy (RPi) | eth0 | eth0.30 |
-| yelena (RPi) | eth0 | eth0.30 |
-| xialing (x86) | eno1 | eno1.30 |
+| peggy (RPi) | eth0 | eth0.300 |
+| yelena (RPi) | eth0 | eth0.300 |
+| xialing (x86) | eno1 | eno1.300 |
 
 **NAD selection:** Use `macvlan-lan` / `macvlan-iot` for RPi nodes, `macvlan-lan-x86` / `macvlan-iot-x86` for xialing.
 
-**⚠️ VLAN interfaces not yet created:** The IoT VLAN interfaces (`eth0.30`, `eno1.30`) must be created on hosts before IoT NADs will work. Only xialing needs this for Home Assistant. See Step 2 bootstrap tasks.
+**IoT VLAN interface:** Created via Ansible bootstrap (Step 2) — `eno1.300` on xialing for Home Assistant macvlan.
 
 ### Macvlan IP Ranges (Whereabouts IPAM)
 

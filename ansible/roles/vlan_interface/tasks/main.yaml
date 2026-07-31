@@ -1,0 +1,50 @@
+---
+# Create VLAN interface for IoT network (required for Home Assistant macvlan)
+#
+# Variables:
+#   vlan_parent: Parent interface (e.g., eno1)
+#   vlan_id: VLAN ID (e.g., 30)
+
+- name: Install NetworkManager (Rocky Linux)
+  ansible.builtin.dnf:
+    name: NetworkManager
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Ensure NetworkManager is running
+  ansible.builtin.systemd:
+    name: NetworkManager
+    state: started
+    enabled: true
+
+- name: Check if VLAN connection already exists
+  ansible.builtin.command:
+    cmd: nmcli -t -f NAME connection show
+  register: nm_connections
+  changed_when: false
+
+- name: Create VLAN interface with nmcli (no IP - just tagging)
+  ansible.builtin.command:
+    cmd: >
+      nmcli connection add type vlan
+      con-name {{ vlan_parent }}.{{ vlan_id }}
+      ifname {{ vlan_parent }}.{{ vlan_id }}
+      dev {{ vlan_parent }}
+      id {{ vlan_id }}
+      ipv4.method disabled
+      ipv6.method disabled
+  when: (vlan_parent ~ '.' ~ vlan_id) not in nm_connections.stdout
+
+- name: Bring up VLAN interface
+  ansible.builtin.command:
+    cmd: nmcli connection up {{ vlan_parent }}.{{ vlan_id }}
+  register: vlan_up
+  changed_when: "'successfully activated' in vlan_up.stdout"
+  failed_when: false
+
+- name: Verify VLAN interface exists
+  ansible.builtin.command:
+    cmd: ip link show {{ vlan_parent }}.{{ vlan_id }}
+  register: vlan_check
+  changed_when: false
+  failed_when: vlan_check.rc != 0

@@ -32,6 +32,10 @@ nfs_export_networks:
 # --- SMB Configuration ---
 smb_force_user: levin
 
+# --- IoT VLAN Configuration ---
+iot_vlan_id: 300
+iot_vlan_cidr: "10.0.30.0/24"
+
 # --- GitHub / Flux Configuration ---
 github_owner: lbfrias
 github_repo: homelab

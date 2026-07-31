@@ -25,3 +25,13 @@
   roles:
     - role: nfs_smb
       tags: nfs
+
+- name: Configure IoT VLAN interface on xialing
+  hosts: xialing
+  become: true
+  vars:
+    vlan_parent: eno1
+    vlan_id: "{{ iot_vlan_id }}"
+  roles:
+    - role: vlan_interface
+      tags: vlan
