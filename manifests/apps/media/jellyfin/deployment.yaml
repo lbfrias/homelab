@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  labels:
+    app: media-manager
+    component: jellyfin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: jellyfin
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: jellyfin
+    spec:
+      hostname: jellyfin
+      containers:
+      - image: linuxserver/jellyfin:10.11.2
+        name: jellyfin
+        env: 
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 8096
+          name: http
+          protocol: TCP
+        - containerPort: 8920
+          name: https
+          protocol: TCP
+        - containerPort: 1900
+          name: service-disc
+          protocol: UDP
+        - containerPort: 7359
+          name: client-disc
+          protocol: UDP
+        volumeMounts:
+        - name: hwa
+          mountPath: /dev/dri
+        - name: config
+          mountPath: /config
+        - name: movies
+          mountPath: /data/movies
+          readOnly: true
+        - name: tvseries
+          mountPath: /data/tv
+          readOnly: true
+        securityContext:
+          privileged: true
+      resources:
+        limits:
+        gpu.intel.com/i915: 1
+      volumes:
+      - name: hwa
+        hostPath:
+          path: /dev/dri
+      - name: config
+        persistentVolumeClaim:
+          claimName: jellyfin-pvc
+      - name: movies
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/movies
+      - name: tvseries
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/tvseries
+      restartPolicy: Always
+      nodeName: xialing
