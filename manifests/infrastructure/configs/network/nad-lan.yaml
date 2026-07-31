@@ -17,6 +17,7 @@ spec:
       "ipam": {
         "type": "whereabouts",
         "range": "10.0.0.0/24",
+        "configuration_path": "/var/lib/rancher/k3s/agent/etc/cni/net.d/whereabouts.d/whereabouts.conf",
         "exclude": [
           "10.0.0.1/32",
           "10.0.0.2/32",
@@ -57,6 +58,7 @@ spec:
       "ipam": {
         "type": "whereabouts",
         "range": "10.0.0.0/24",
+        "configuration_path": "/var/lib/rancher/k3s/agent/etc/cni/net.d/whereabouts.d/whereabouts.conf",
         "exclude": [
           "10.0.0.1/32",
           "10.0.0.2/32",
