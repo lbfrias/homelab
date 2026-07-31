@@ -32,6 +32,8 @@ K8s manifests use `${VAR}` syntax (e.g., `${XIALING_IP}`, `${LAN_CIDR}`) which F
 
 **When changing IPs, subnets, or shared config:** Update both files.
 
+**Note:** `apps/` is managed by a Flux Kustomization CR (in `infrastructure/kustomizations.yaml`), NOT directly in `manifests/kustomization.yaml`. This ordering ensures `cluster-vars` exists before substitution runs.
+
 ## Documentation Sync
 
 **After every feature or change, sync documentation to match the repo state:**

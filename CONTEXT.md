@@ -357,3 +357,8 @@ homelab/
   - `ansible/vars.yaml` — source of truth for Ansible
   - `manifests/infrastructure/controllers/cluster-vars.yaml` — ConfigMap for Flux substitution
   - K8s manifests use `${XIALING_IP}` etc., substituted by Flux `postBuild`
+- **Flux structure:** `apps/` is NOT in `manifests/kustomization.yaml`. It's managed by a Flux Kustomization CR in `infrastructure/kustomizations.yaml`. This is because:
+  - Variable substitution requires `cluster-vars` ConfigMap to exist first
+  - `cluster-vars` is created by `infrastructure-controllers`
+  - The Flux Kustomization CRs enforce ordering: controllers → configs → apps
+  - Each CR can have `postBuild.substituteFrom` to replace `${VAR}` placeholders
