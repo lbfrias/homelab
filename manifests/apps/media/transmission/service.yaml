@@ -12,6 +12,9 @@ spec:
     app: media-manager
     component: transmission
   ports:
+  - port: 9091
+    name: api
+    protocol: TCP
   - port: 3000
     name: webui
     protocol: TCP

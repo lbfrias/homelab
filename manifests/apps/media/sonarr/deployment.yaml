@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarr
+  namespace: media
+  labels:
+    app: media-manager
+    component: sonarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: sonarr
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: sonarr
+    spec:
+      hostname: sonarr
+      containers:
+      - image: linuxserver/sonarr:4.0.14
+        name: sonarr
+        env: 
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Asia/Manila"
+        ports:
+        - containerPort: 8989
+          name: webui
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: data
+          mountPath: /data
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: sonarr-pvc
+      - name: data
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library
+          readOnly: false
+      restartPolicy: Always
