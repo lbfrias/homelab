@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kavita
+  namespace: media
+  labels:
+    app: media-manager
+    component: kavita
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: kavita
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: kavita
+    spec:
+      hostname: kavita
+      containers:
+      - image: kizaing/kavita:0.7.8.2
+        name: kavita
+        ports:
+        - containerPort: 5000
+          name: webui
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /kavita/config
+        - name: comics
+          mountPath: /data/comics
+        - name: books
+          mountPath: /data/books
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: kavita-pvc
+      - name: comics
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/comics
+          readOnly: false
+      - name: books
+        nfs:
+          server: 10.0.0.13
+          path: /mnt/data/library/books
+          readOnly: false
+      restartPolicy: Always

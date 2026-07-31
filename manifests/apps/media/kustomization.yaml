@@ -5,5 +5,7 @@ resources:
   - sonarr
   - prowlarr
   - jellyfin
+  - kavita
+  - mylar3
   - transmission
   - namespace.yaml

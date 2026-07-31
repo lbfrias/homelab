@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mylar3
+  namespace: media
+  labels:
+    app: media-manager
+    component: mylar3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-manager
+      component: mylar3
+  template:
+    metadata:
+      labels:
+        app: media-manager
+        component: mylar3
+    spec:
+      containers:
+      - env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: Asia/Manila
+        image: linuxserver/mylar3:0.10.0
+        imagePullPolicy: Always
+        name: mylar3
+        ports:
+        - containerPort: 8090
+          name: webui
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /data
+          name: data
+      hostname: mylar3
+      restartPolicy: Always
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: mylar3-pvc
+      - name: data
+        nfs:
+          path: /mnt/data/library
+          server: 10.0.0.13

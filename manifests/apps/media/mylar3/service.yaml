@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mylar3-svc
+  namespace: media
+  labels:
+    app: media-manager
+    component: mylar3
+spec:
+  selector:
+    app: media-manager
+    component: mylar3
+  ports:
+  - name: webui
+    port: 8090
+    protocol: TCP
