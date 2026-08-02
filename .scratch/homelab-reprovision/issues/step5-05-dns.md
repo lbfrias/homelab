@@ -4,7 +4,7 @@
 
 **Blocked by:** Step 5.4 (Multus/Macvlan)
 
-**Status:** in-progress
+**Status:** done
 
 ## Architecture
 
@@ -33,22 +33,23 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 ### dnsdist (Load Balancer)
 
 - [x] Create dnsdist Deployment in `manifests/apps/network/dnsdist/`
-- [x] Configure macvlan annotations for static IPs (.98, .99)
+- [x] Configure macvlan with Whereabouts IPAM for IPs (.98, .99)
 - [x] Create ConfigMap with Lua config (3 backends, round-robin)
 - [x] Configure health checks (DNS query-based)
 
 ### Infrastructure
 
 - [x] Enable Whereabouts IPAM in Multus helm release
-- [x] Create macvlan-dns NAD with Whereabouts IPAM
+- [x] Create macvlan-dns-technitium NAD with Whereabouts IPAM
+- [x] Create macvlan-dns-dnsdist NAD with Whereabouts IPAM
 - [x] Unified interface naming (eth0 → eno1) for all nodes
 
 ### Verification
 
-- [ ] Verify: DNS queries resolve correctly via both VIPs
-- [ ] Verify: Queries are distributed across all 3 Technitium instances
+- [x] Verify: DNS queries resolve correctly via both VIPs
+- [x] Verify: Queries are distributed across all 3 Technitium instances
+- [x] Verify: Ad-blocking works (ads.google.com, pagead2.googlesyndication.com blocked)
 - [ ] Verify: Technitium logs show real client IPs (not dnsdist IPs)
-- [ ] Verify: Ad-blocking works
 - [ ] Verify: Authoritative zones respond correctly
 - [ ] Verify: Failover works (stop one Technitium, queries still succeed)
 
@@ -60,9 +61,16 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 | dnsdist VIP 2 | 10.0.0.99 |
 | Technitium (Whereabouts range) | 10.0.0.95-97 |
 
+## Access
+
+- **Technitium Web UI:** http://10.0.0.95:5380 (or .96, .97)
+- **Username:** admin
+- **Password:** stored in `technitium-admin-password` secret in `dns` namespace
+
 ## Notes
 
 - dnsdist preserves client source IP natively — no special config needed
 - Technitium API enables GitOps for zone management (no web UI dependency)
 - See ADR-009 in CONTEXT.md for full rationale
 - Interface unified to 'eno1' across all nodes (RPi renamed from eth0)
+- Technitium image requires emptyDir at /run due to read-only filesystem

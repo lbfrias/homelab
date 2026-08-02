@@ -15,7 +15,8 @@ data:
       name = "technitium-0",
       checkName = "google.com",
       checkInterval = 5,
-      maxCheckFailures = 3
+      maxCheckFailures = 3,
+      useClientSubnet = true
     })
 
     newServer({
@@ -23,7 +24,8 @@ data:
       name = "technitium-1",
       checkName = "google.com",
       checkInterval = 5,
-      maxCheckFailures = 3
+      maxCheckFailures = 3,
+      useClientSubnet = true
     })
 
     newServer({
@@ -31,17 +33,19 @@ data:
       name = "technitium-2",
       checkName = "google.com",
       checkInterval = 5,
-      maxCheckFailures = 3
+      maxCheckFailures = 3,
+      useClientSubnet = true
     })
+
+    -- EDNS Client Subnet: pass full client IP (/32 for IPv4, /128 for IPv6)
+    setECSSourcePrefixV4(32)
+    setECSSourcePrefixV6(128)
 
     -- Round-robin load balancing policy (default)
     setServerPolicy(roundrobin)
 
     -- Listen on all interfaces (macvlan will provide external IP)
     setLocal("0.0.0.0:53")
-
-    -- Web console disabled (unnecessary complexity, metrics via prometheus)
-    -- webserver("0.0.0.0:8083")
 
     -- Logging
     setVerboseHealthChecks(true)
