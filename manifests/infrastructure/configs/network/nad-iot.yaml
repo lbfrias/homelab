@@ -1,8 +1,8 @@
 ---
 # NetworkAttachmentDefinition for IoT VLAN (10.0.30.0/24)
 # Used by Home Assistant for device discovery
-# Parent interface varies by node: eth0 (RPi), eno1 (x86)
-# Interface name is eth0.300 / eno1.300 (VLAN 300 carries the 10.0.30.0/24 network)
+# Uses unified 'eno1' interface (configured via unified_lan_interface Ansible role)
+# Interface name is eno1.300 (VLAN 300 carries the 10.0.30.0/24 network)
 # Uses static IPAM - IP must be specified in pod annotation
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
@@ -14,27 +14,6 @@ spec:
     {
       "cniVersion": "0.3.1",
       "name": "macvlan-iot",
-      "type": "macvlan",
-      "master": "eth0.300",
-      "mode": "bridge",
-      "ipam": {
-        "type": "static"
-      }
-    }
----
-# NetworkAttachmentDefinition for IoT VLAN on x86 nodes (xialing)
-# Uses eno1.300 instead of eth0.300
-# Uses static IPAM - IP must be specified in pod annotation
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: macvlan-iot-x86
-  namespace: default
-spec:
-  config: |
-    {
-      "cniVersion": "0.3.1",
-      "name": "macvlan-iot-x86",
       "type": "macvlan",
       "master": "eno1.300",
       "mode": "bridge",

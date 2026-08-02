@@ -98,16 +98,82 @@
         line: '\1 cgroup_memory=1 cgroup_enable=memory'
       register: cmdline_updated
 
+    # Unified interface naming: Rename RPi eth0 → eno1 to match x86 standard
+    # This enables macvlan NADs to use same master interface across all nodes
+    - name: Check if interface is already eno1
+      ansible.builtin.set_fact:
+        interface_already_eno1: "{{ ansible_default_ipv4.interface == 'eno1' }}"
+
+    - name: Get MAC address of primary interface (for rename)
+      when: not interface_already_eno1
+      ansible.builtin.shell: |
+        ip link show {{ ansible_default_ipv4.interface }} | grep -oP 'link/ether \K[0-9a-f:]+' | tr '[:lower:]' '[:upper:]'
+      register: primary_mac
+      changed_when: false
+
+    - name: Create systemd.link to rename interface to eno1
+      when: not interface_already_eno1
+      ansible.builtin.copy:
+        dest: /etc/systemd/network/10-eno1.link
+        mode: "0644"
+        content: |
+          # Unified LAN interface naming for macvlan compatibility
+          # Renames primary ethernet to 'eno1' to match x86 standard naming
+          [Match]
+          MACAddress={{ primary_mac.stdout }}
+
+          [Link]
+          Name=eno1
+      register: interface_link_created
+
+    - name: Update netplan interface name to eno1 (RPi)
+      when:
+        - not interface_already_eno1
+        - ansible_os_family == "Debian"
+      ansible.builtin.replace:
+        path: /etc/netplan/50-cloud-init.yaml
+        regexp: '(\s+)(eth0|end0):'
+        replace: '\1eno1:'
+      failed_when: false
+      register: netplan_updated
+
     - name: Check if K3s is already installed
       ansible.builtin.stat:
         path: /usr/local/bin/k3s
       register: k3s_installed
 
-    - name: Reboot to apply kernel/sysctl/cgroup changes (fresh install only)
+    - name: Reboot to apply kernel/sysctl/cgroup/interface changes (fresh install only)
       when: not k3s_installed.stat.exists
       ansible.builtin.reboot:
         reboot_timeout: 300
-        msg: "Rebooting to apply kernel modules and sysctl settings before K3s install"
+        msg: "Rebooting to apply kernel modules, sysctl, and interface naming before K3s install"
+
+    # Rolling reboot for existing cluster if interface was renamed
+    # Uses serial: 1 at play level to reboot one node at a time
+    - name: Set reboot needed flag
+      ansible.builtin.set_fact:
+        needs_interface_reboot: "{{ interface_link_created.changed | default(false) and k3s_installed.stat.exists }}"
+
+- name: Rolling reboot for interface rename (existing cluster)
+  hosts: k3s_cluster
+  become: true
+  serial: 1
+  tasks:
+    - name: Reboot node for interface rename
+      when: needs_interface_reboot | default(false)
+      block:
+        - name: "Rebooting {{ inventory_hostname }} for interface rename"
+          ansible.builtin.reboot:
+            reboot_timeout: 300
+            msg: "Rebooting to apply interface rename (eth0 → eno1)"
+
+        - name: Wait for K3s to be ready after reboot
+          ansible.builtin.command: kubectl get nodes
+          register: kubectl_result
+          until: kubectl_result.rc == 0
+          retries: 30
+          delay: 10
+          changed_when: false
 
 # Play 1: Install K3s on first server (xialing)
 - name: K3s First Server Bootstrap

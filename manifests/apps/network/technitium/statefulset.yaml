@@ -1,0 +1,86 @@
+---
+# Technitium DNS StatefulSet
+# Runs one pod per node via podAntiAffinity
+# Each pod gets a unique macvlan IP from Whereabouts IPAM (10.0.0.204-206)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: technitium
+  namespace: dns
+  labels:
+    app: technitium
+spec:
+  serviceName: technitium
+  replicas: 3
+  selector:
+    matchLabels:
+      app: technitium
+  template:
+    metadata:
+      labels:
+        app: technitium
+      annotations:
+        # Whereabouts IPAM assigns from 10.0.0.95-97 range
+        k8s.v1.cni.cncf.io/networks: macvlan-dns-technitium
+    spec:
+      containers:
+        - name: technitium
+          image: technitium/dns-server:13.5.3
+          env:
+            - name: DNS_SERVER_DOMAIN
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: DNS_SERVER_ADMIN_PASSWORD_FILE
+              value: "/run/secrets/admin-password"
+            - name: DNS_SERVER_PREFER_IPV6
+              value: "false"
+            - name: DNS_SERVER_FORWARDERS
+              value: "1.1.1.1,1.0.0.1,9.9.9.9,149.112.112.112"
+            - name: DNS_SERVER_ENABLE_BLOCKING
+              value: "true"
+            - name: DNS_SERVER_BLOCK_LIST_URLS
+              value: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+          ports:
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 53
+              name: dns-tcp
+              protocol: TCP
+            - containerPort: 5380
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dns
+            - name: admin-password
+              mountPath: /run/secrets
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: admin-password
+          secret:
+            secretName: technitium-admin-password
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: technitium
+              topologyKey: kubernetes.io/hostname
+  volumeClaimTemplates:
+    - metadata:
+        name: config
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 1Gi

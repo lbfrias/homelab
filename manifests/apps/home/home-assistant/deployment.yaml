@@ -17,12 +17,12 @@ spec:
         app: home-assistant
       annotations:
         # Attach to IoT VLAN for mDNS/SSDP device discovery
-        # Static IP 10.0.30.150 via static IPAM
+        # Static IP 10.0.30.201 via static IPAM (see ip-plan.yaml)
         k8s.v1.cni.cncf.io/networks: |
           [{
-            "name": "macvlan-iot-x86",
+            "name": "macvlan-iot",
             "namespace": "default",
-            "ips": ["10.0.30.150/24"]
+            "ips": ["10.0.30.201/24"]
           }]
     spec:
       hostname: home-assistant
@@ -46,5 +46,5 @@ spec:
         persistentVolumeClaim:
           claimName: home-assistant-pvc
       restartPolicy: Always
-      # Pin to xialing (only node with eno1.300 for macvlan-iot-x86)
+      # Pin to xialing (only node with eno1.300 VLAN interface configured)
       nodeName: xialing

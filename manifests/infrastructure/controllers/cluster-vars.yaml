@@ -17,6 +17,10 @@ data:
   # Subnets
   LAN_CIDR: "10.0.0.0/24"
   IOT_VLAN_CIDR: "10.0.30.0/24"
+  # DNS Infrastructure
+  DNSDIST_1_IP: "10.0.0.98"
+  DNSDIST_2_IP: "10.0.0.99"
+  TECHNITIUM_RANGE: "10.0.0.95-10.0.0.97"
   # GitHub
   GITHUB_OWNER: "lbfrias"
   GITHUB_REPO: "homelab"

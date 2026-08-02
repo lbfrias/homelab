@@ -1,0 +1,25 @@
+---
+# Headless service for internal cluster access to Technitium pods
+# Primary access is via macvlan IPs, but this enables in-cluster DNS resolution
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium
+  namespace: dns
+spec:
+  selector:
+    app: technitium
+  ports:
+    - name: dns-udp
+      port: 53
+      targetPort: 53
+      protocol: UDP
+    - name: dns-tcp
+      port: 53
+      targetPort: 53
+      protocol: TCP
+    - name: http
+      port: 5380
+      targetPort: 5380
+      protocol: TCP
+  clusterIP: None

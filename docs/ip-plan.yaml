@@ -158,35 +158,35 @@ hosts:
   # K8s pods that need LAN-routable IPs (mDNS, L2 access).
   # Generator outputs: Pod annotations or values files
   infra_pods:
-    - ip: 10.0.0.201
-      hostname: omada-controller
+    - ip: 10.0.0.95
+      hostname: technitium-0
       vlan: 1
-      description: Omada SDN Controller
+      description: Technitium DNS (Whereabouts assigns from .95-.97 range)
 
-    - ip: 10.0.0.202
+    - ip: 10.0.0.96
+      hostname: technitium-1
+      vlan: 1
+      description: Technitium DNS
+
+    - ip: 10.0.0.97
+      hostname: technitium-2
+      vlan: 1
+      description: Technitium DNS
+
+    - ip: 10.0.0.98
       hostname: dnsdist-1
       vlan: 1
       description: DNS load balancer VIP 1
 
-    - ip: 10.0.0.203
+    - ip: 10.0.0.99
       hostname: dnsdist-2
       vlan: 1
       description: DNS load balancer VIP 2
 
-    - ip: 10.0.0.204
-      hostname: technitium-peggy
+    - ip: 10.0.0.201
+      hostname: omada-controller
       vlan: 1
-      description: Technitium DNS (peggy)
-
-    - ip: 10.0.0.205
-      hostname: technitium-yelena
-      vlan: 1
-      description: Technitium DNS (yelena)
-
-    - ip: 10.0.0.206
-      hostname: technitium-xialing
-      vlan: 1
-      description: Technitium DNS (xialing)
+      description: Omada SDN Controller
 
     - ip: 10.0.30.201
       hostname: home-assistant
@@ -236,8 +236,10 @@ reserved_ranges:
       purpose: Kubernetes nodes
     - range: 10.0.0.20-10.0.0.49
       purpose: Servers (non-K8s)
-    - range: 10.0.0.50-10.0.0.99
+    - range: 10.0.0.50-10.0.0.94
       purpose: Static devices (DHCP reservations)
+    - range: 10.0.0.95-10.0.0.99
+      purpose: DNS infrastructure (Technitium .95-.97, dnsdist .98-.99)
     - range: 10.0.0.100-10.0.0.179
       purpose: DHCP dynamic pool
     - range: 10.0.0.180-10.0.0.199

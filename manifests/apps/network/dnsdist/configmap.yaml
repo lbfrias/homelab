@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dnsdist-config
+  namespace: dns
+data:
+  dnsdist.conf: |
+    -- dnsdist configuration for homelab DNS load balancing
+    -- Distributes queries across 3 Technitium backends in round-robin
+
+    -- Define backend Technitium servers (macvlan IPs from Whereabouts range)
+    newServer({
+      address = "10.0.0.95:53",
+      name = "technitium-0",
+      checkName = "google.com",
+      checkInterval = 5,
+      maxCheckFailures = 3
+    })
+
+    newServer({
+      address = "10.0.0.96:53",
+      name = "technitium-1",
+      checkName = "google.com",
+      checkInterval = 5,
+      maxCheckFailures = 3
+    })
+
+    newServer({
+      address = "10.0.0.97:53",
+      name = "technitium-2",
+      checkName = "google.com",
+      checkInterval = 5,
+      maxCheckFailures = 3
+    })
+
+    -- Round-robin load balancing policy (default)
+    setServerPolicy(roundrobin)
+
+    -- Listen on all interfaces (macvlan will provide external IP)
+    setLocal("0.0.0.0:53")
+
+    -- Web console disabled (unnecessary complexity, metrics via prometheus)
+    -- webserver("0.0.0.0:8083")
+
+    -- Logging
+    setVerboseHealthChecks(true)

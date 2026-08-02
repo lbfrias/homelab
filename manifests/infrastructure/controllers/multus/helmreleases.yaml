@@ -31,6 +31,6 @@ spec:
           limits:
             cpu: 100m
             memory: 50Mi
-    # Whereabouts IPAM subchart - disabled, using static IPAM instead
+    # Whereabouts IPAM for dynamic IP assignment within ranges
     rke2-whereabouts:
-      enabled: false
+      enabled: true

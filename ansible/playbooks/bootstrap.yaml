@@ -7,8 +7,10 @@
 # What this does:
 #   - Updates package cache
 #   - Disables firewalld on Rocky Linux
-#   - Enables cgroup memory on RPi (reboots if needed)
 #   - Configures NFS/SMB server on xialing
+#
+# Note: Interface renaming (eth0 → eno1) is done in Step 3 (K3s)
+#       to combine with the cgroup reboot and minimize reboots.
 #
 # Prerequisites:
 #   - Nodes provisioned (Step 1) and reachable via SSH

@@ -1,6 +1,6 @@
 ---
 # NetworkAttachmentDefinition for LAN (10.0.0.0/24)
-# Parent interface varies by node: eth0 (RPi), eno1 (x86)
+# Uses unified 'eno1' interface (configured via unified_lan_interface Ansible role)
 # Uses static IPAM - IP must be specified in pod annotation
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
@@ -12,27 +12,6 @@ spec:
     {
       "cniVersion": "0.3.1",
       "name": "macvlan-lan",
-      "type": "macvlan",
-      "master": "eth0",
-      "mode": "bridge",
-      "ipam": {
-        "type": "static"
-      }
-    }
----
-# NetworkAttachmentDefinition for LAN on x86 nodes (xialing)
-# Uses eno1 instead of eth0
-# Uses static IPAM - IP must be specified in pod annotation
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: macvlan-lan-x86
-  namespace: default
-spec:
-  config: |
-    {
-      "cniVersion": "0.3.1",
-      "name": "macvlan-lan-x86",
       "type": "macvlan",
       "master": "eno1",
       "mode": "bridge",
