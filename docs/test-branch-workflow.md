@@ -615,10 +615,12 @@ spec:
 
 Templates Flux resources for each detected branch. For each `test/*` branch, it creates:
 - A **GitRepository** pointing to that branch
-- A **Kustomization** that deploys `./manifests/apps` to the `test` namespace
+- A **Kustomization** that deploys only the app matching the branch name
+
+The path is derived from the branch name: `test/media` deploys `./manifests/apps/media`.
 
 The template uses Go templating with inputs from the ResourceSetInputProvider:
-- `<< inputs.branch >>` - Branch name (e.g., `test/hello`)
+- `<< inputs.branch >>` - Branch name (e.g., `test/media`)
 - `<< inputs.sha >>` - Latest commit SHA
 - `<< inputs.id >>` - Unique numeric ID (used in resource names)
 
@@ -632,26 +634,22 @@ An isolated namespace where all test branch deployments land. Resources here don
 
 ### Creating a Test Branch
 
+The branch name determines which app directory is deployed. The path after `test/` maps directly to `manifests/apps/`:
+
 ```bash
-# Create and switch to test branch
-git checkout -b test/my-feature
+# Test an entire category
+git checkout -b test/media           # deploys manifests/apps/media/
 
-# Add your manifests to manifests/apps/my-feature/
-mkdir -p manifests/apps/my-feature
-cat > manifests/apps/my-feature/deployment.yaml << 'EOF'
-apiVersion: apps/v1
-kind: Deployment
-...
-EOF
-
-# Update manifests/apps/kustomization.yaml to include your app
-# (This is needed because the ResourceSet deploys from ./manifests/apps)
-
-# Commit and push
-git add -A
-git commit -m "test: add my-feature deployment"
-git push origin test/my-feature
+# Test a specific service (recommended)
+git checkout -b test/home/new-service  # deploys manifests/apps/home/new-service/
 ```
+
+**Examples:**
+| Branch | Deploys |
+|--------|---------|
+| `test/media` | `manifests/apps/media/` (all media services) |
+| `test/home/home-assistant` | `manifests/apps/home/home-assistant/` only |
+| `test/home/new-thing` | `manifests/apps/home/new-thing/` only |
 
 ### Triggering Immediate Deployment
 
@@ -698,18 +696,18 @@ The ResourceSet will automatically delete the GitRepository and Kustomization, a
 
 ### Deployment Flow
 
-1. **You push `test/my-feature`** to GitHub
+1. **You push `test/media`** to GitHub
 2. **ResourceSetInputProvider** polls GitHub API, discovers new branch
 3. **ResourceSet** receives the branch metadata as an input
 4. **ResourceSet** templates and creates:
-   - `GitRepository/test-<ID>` pointing to `test/my-feature` branch
-   - `Kustomization/test-<ID>` deploying `./manifests/apps` to `test` namespace
+   - `GitRepository/test-<ID>` pointing to `test/media` branch
+   - `Kustomization/test-<ID>` deploying `./manifests/apps/media` to `test` namespace
 5. **Kustomization** fetches manifests from the branch and applies them
 6. **Your resources** appear in the `test` namespace
 
 ### Cleanup Flow
 
-1. **You delete `test/my-feature`** branch on GitHub
+1. **You delete `test/media`** branch on GitHub
 2. **ResourceSetInputProvider** polls GitHub API, branch is gone
 3. **ResourceSet** removes the branch from its inputs
 4. **ResourceSet** deletes the GitRepository and Kustomization it created
@@ -718,12 +716,15 @@ The ResourceSet will automatically delete the GitRepository and Kustomization, a
 
 ## Limitations
 
-### Only Deploys `manifests/apps/`
+### Branch Name Must Match App Directory
 
-The ResourceSet is configured to deploy from `./manifests/apps` only, not the entire `manifests/` directory. This prevents test branches from:
-- Re-deploying Flux itself (`flux-system/`)
-- Modifying infrastructure controllers
-- Conflicting with production resources
+The branch path (after `test/`) must exactly match a directory under `manifests/apps/`:
+
+| Branch | Path Deployed |
+|--------|---------------|
+| `test/media` | `manifests/apps/media/` ✓ |
+| `test/home/home-assistant` | `manifests/apps/home/home-assistant/` ✓ |
+| `test/home/new-service` | `manifests/apps/home/new-service/` (must exist) ✓ |
 
 **To test infrastructure changes**, you'll need a different approach (e.g., a separate test cluster).
 
@@ -789,7 +790,7 @@ Then add `secretRef` to the ResourceSetInputProvider.
    kubectl get gitrepository -n flux-system | grep test-
    ```
 
-3. Ensure `manifests/apps/kustomization.yaml` includes your app
+3. Ensure the app directory exists at `manifests/apps/<branch-suffix>/`
 
 ### Resources Not Cleaning Up
 

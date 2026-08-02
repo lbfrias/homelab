@@ -40,6 +40,7 @@ spec:
         sourceRef:
           kind: GitRepository
           name: test-<< inputs.id >>
-        path: ./manifests/apps
+        # Derive path from branch: test/media → ./manifests/apps/media
+        path: ./manifests/apps/<< inputs.branch | trimPrefix "test/" >>
         prune: true
         targetNamespace: test
