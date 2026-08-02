@@ -79,15 +79,6 @@
         reload: true
       loop: "{{ k8s_sysctl }}"
 
-    # Rocky Linux: disable firewalld (conflicts with K3s iptables)
-    - name: Disable firewalld (Rocky)
-      when: ansible_os_family == "RedHat"
-      ansible.builtin.systemd:
-        name: firewalld
-        state: stopped
-        enabled: false
-      ignore_errors: true
-
     # Raspberry Pi OS: enable cgroup memory for containers
     - name: Check if cgroup memory is enabled (RPi)
       when: ansible_os_family == "Debian"

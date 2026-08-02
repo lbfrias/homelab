@@ -63,10 +63,11 @@ bootloader --location=mbr --boot-drive=sda --append="crashkernel=1G-4G:192M,4G-6
 selinux --enforcing
 
 #---------- Firewall ----------
-firewall --enabled --ssh
+# Disabled: K3s manages iptables directly (conflicts with firewalld)
+firewall --disabled
 
 #---------- Services ----------
-services --enabled=sshd,NetworkManager
+services --enabled=sshd,NetworkManager,avahi-daemon
 
 #---------- Skip GUI ----------
 skipx
@@ -80,6 +81,8 @@ openssh-clients
 sudo
 vim-minimal
 rsync
+avahi
+nss-mdns
 -plymouth
 %end
 
@@ -104,8 +107,7 @@ if [ -d /home/{{ username }}/.ssh ]; then
     chown -R {{ username }}:{{ username }} /home/{{ username }}/.ssh
 fi
 
-# Open custom SSH port in firewall
-firewall-offline-cmd --add-port={{ ssh_port }}/tcp
+# Note: Firewall disabled for K3s compatibility — SSH port open by default
 
 #---------- NAS Drive Mount (4TB USB HDD as RAID1 degraded) ----------
 # Create mount point for existing RAID array
