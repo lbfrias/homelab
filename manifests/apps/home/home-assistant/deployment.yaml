@@ -17,12 +17,11 @@ spec:
         app: home-assistant
       annotations:
         # Attach to IoT VLAN for mDNS/SSDP device discovery
-        # Static IP 10.0.30.220 via Whereabouts (range: 200-239)
+        # Static IP 10.0.30.220 via static IPAM
         k8s.v1.cni.cncf.io/networks: |
           [{
             "name": "macvlan-iot-x86",
-            "namespace": "default",
-            "ips": ["10.0.30.220/24"]
+            "ips": ["10.0.30.150/24"]
           }]
     spec:
       hostname: home-assistant

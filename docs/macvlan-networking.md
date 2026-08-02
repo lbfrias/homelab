@@ -47,7 +47,7 @@ NetworkAttachmentDefinitions (NADs) define the macvlan configuration. Different 
 | `macvlan-lan` | eth0 | peggy, yelena (RPi) |
 | `macvlan-lan-x86` | eno1 | xialing (x86) |
 
-IP range: `10.0.0.200` - `10.0.0.239` (managed by Whereabouts IPAM)
+IP range: `10.0.0.200` - `10.0.0.239` (reserved for pods, managed manually via pod annotations)
 
 ### IoT VLAN (10.0.30.0/24)
 
@@ -56,7 +56,7 @@ IP range: `10.0.0.200` - `10.0.0.239` (managed by Whereabouts IPAM)
 | `macvlan-iot` | eth0.300 | peggy, yelena (RPi) |
 | `macvlan-iot-x86` | eno1.300 | xialing (x86) |
 
-IP range: `10.0.30.200` - `10.0.30.239` (managed by Whereabouts IPAM)
+IP range: `10.0.30.200` - `10.0.30.239` (reserved for pods, managed manually via pod annotations)
 
 ### VLAN Interface Prerequisite
 
@@ -90,9 +90,9 @@ The Kubernetes scheduler is unaware of NAD compatibility — you must enforce it
 
 ## Usage Examples
 
-### Basic: Auto-assigned IP
+### Basic: Static IP (Required)
 
-Add the annotation to request a macvlan interface. Whereabouts will assign an IP from the pool.
+Add the annotation to request a macvlan interface. You must specify the IP address.
 
 ```yaml
 apiVersion: v1
@@ -100,7 +100,11 @@ kind: Pod
 metadata:
   name: my-app
   annotations:
-    k8s.v1.cni.cncf.io/networks: macvlan-lan
+    k8s.v1.cni.cncf.io/networks: |
+      [{
+        "name": "macvlan-lan",
+        "ips": ["10.0.0.210/24"]
+      }]
 spec:
   containers:
     - name: app
@@ -109,18 +113,18 @@ spec:
 
 The pod will have two interfaces:
 - `eth0` — Flannel (10.42.x.x)
-- `net1` — Macvlan (10.0.0.200-239, auto-assigned)
+- `net1` — Macvlan (your specified IP)
 
 ### Specific IP
 
-Request a specific IP address:
+Request a specific IP address (include the CIDR suffix for the subnet mask):
 
 ```yaml
 annotations:
   k8s.v1.cni.cncf.io/networks: |
     [{
       "name": "macvlan-lan",
-      "ips": ["10.0.0.210"]
+      "ips": ["10.0.0.210/24"]
     }]
 ```
 
@@ -133,11 +137,11 @@ annotations:
   k8s.v1.cni.cncf.io/networks: |
     [{
       "name": "macvlan-lan",
-      "ips": ["10.0.0.210"]
+      "ips": ["10.0.0.210/24"]
     },
     {
       "name": "macvlan-iot",
-      "ips": ["10.0.30.210"]
+      "ips": ["10.0.30.210/24"]
     }]
 ```
 
@@ -198,7 +202,7 @@ spec:
         k8s.v1.cni.cncf.io/networks: |
           [{
             "name": "macvlan-iot",
-            "ips": ["10.0.30.210"]
+            "ips": ["10.0.30.210/24"]
           }]
     spec:
       affinity:
@@ -223,14 +227,7 @@ spec:
 kubectl exec -it <pod> -- ip addr
 ```
 
-Look for `net1` with an IP in the macvlan range.
-
-### Check IP allocation
-
-```bash
-kubectl get ippools.whereabouts.cni.cncf.io -A
-kubectl get overlappingrangeipreservations.whereabouts.cni.cncf.io -A
-```
+Look for `net1` with your specified IP.
 
 ### Test connectivity
 
@@ -256,7 +253,7 @@ kubectl logs -n kube-system -l app=multus --tail=50
 Common causes:
 - Wrong NAD name in annotation
 - Pod scheduled on wrong node (interface mismatch)
-- IP pool exhausted
+- Missing `ips` field in annotation (required for static IPAM)
 
 ### Can't reach pod from LAN
 
@@ -266,11 +263,7 @@ Common causes:
 
 ### IP conflicts
 
-Whereabouts tracks allocations. If you see conflicts:
-```bash
-# Check current allocations
-kubectl get ippools.whereabouts.cni.cncf.io -A -o yaml
-```
+With static IPAM, you're responsible for avoiding IP conflicts. Track allocations in `docs/ip-plan.yaml`.
 
 The IP ranges (200-239) are reserved for Kubernetes — don't assign these IPs to other devices on your network.
 
@@ -281,8 +274,7 @@ The IP ranges (200-239) are reserved for Kubernetes — don't assign these IPs t
 | Component | Purpose | Location |
 |-----------|---------|----------|
 | Multus | CNI multiplexer | DaemonSet in kube-system |
-| Whereabouts | IPAM (IP allocation) | Runs as CNI plugin |
-| NADs | Network definitions | kube-system namespace |
+| NADs | Network definitions | default namespace |
 
 ### How It Works
 
@@ -290,11 +282,10 @@ The IP ranges (200-239) are reserved for Kubernetes — don't assign these IPs t
 2. Kubelet calls Multus (configured as primary CNI)
 3. Multus calls Flannel for `eth0`, then the NAD's CNI (macvlan) for `net1`
 4. Macvlan plugin creates interface attached to host's physical NIC
-5. Whereabouts allocates/reserves IP from the pool
+5. Static IPAM assigns the IP specified in the pod annotation
 6. Pod starts with both interfaces configured
 
 ### File Locations (K3s)
 
 - CNI binaries: `/var/lib/rancher/k3s/data/cni/`
 - CNI config: `/var/lib/rancher/k3s/agent/etc/cni/net.d/`
-- Whereabouts state: Stored as Kubernetes CRDs (ippools, overlappingrangeipreservations)

@@ -31,10 +31,6 @@ spec:
           limits:
             cpu: 100m
             memory: 50Mi
-    # Enable whereabouts IPAM subchart
+    # Whereabouts IPAM subchart - disabled, using static IPAM instead
     rke2-whereabouts:
-      enabled: true
-      fullnameOverride: whereabouts
-      cniConf:
-        confDir: /var/lib/rancher/k3s/agent/etc/cni/net.d
-        binDir: /var/lib/rancher/k3s/data/cni
+      enabled: false
