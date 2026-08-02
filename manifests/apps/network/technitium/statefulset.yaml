@@ -58,6 +58,8 @@ spec:
             - name: admin-password
               mountPath: /secrets
               readOnly: true
+            - name: run
+              mountPath: /run
           resources:
             requests:
               cpu: 50m
@@ -68,6 +70,8 @@ spec:
         - name: admin-password
           secret:
             secretName: technitium-admin-password
+        - name: run
+          emptyDir: {}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
