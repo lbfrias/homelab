@@ -7,6 +7,7 @@ Guidelines for AI agents working on this repository.
 - `ansible/` — Node provisioning (Steps 1-4)
 - `manifests/` — K8s workloads managed by Flux (Step 5)
 - `.scratch/homelab-reprovision/issues/` — Local issue tracker
+- `.scratch/adr/` — Architecture Decision Records
 - `docs/` — User-facing documentation
 
 ## Five-Step Provisioning Model
@@ -21,7 +22,9 @@ Guidelines for AI agents working on this repository.
 
 ## Configuration (DRY)
 
-Shared values live in two files that **must stay in sync**:
+**Source of truth:** `docs/ip-plan.yaml` defines all IP allocations. A generator script (future) will produce derived configs.
+
+Currently, shared values live in two files that **must stay in sync**:
 
 | File | Used by |
 |------|---------|
@@ -30,7 +33,7 @@ Shared values live in two files that **must stay in sync**:
 
 K8s manifests use `${VAR}` syntax (e.g., `${XIALING_IP}`, `${LAN_CIDR}`) which Flux substitutes at reconciliation time from the `cluster-vars` ConfigMap.
 
-**When changing IPs, subnets, or shared config:** Update both files.
+**When changing IPs, subnets, or shared config:** Update `docs/ip-plan.yaml` first, then sync to both files (manual until generator script exists).
 
 **Note:** `apps/` is managed by a Flux Kustomization CR (in `infrastructure/kustomizations.yaml`), NOT directly in `manifests/kustomization.yaml`. This ordering ensures `cluster-vars` exists before substitution runs.
 
@@ -39,7 +42,7 @@ K8s manifests use `${VAR}` syntax (e.g., `${XIALING_IP}`, `${LAN_CIDR}`) which F
 **After every feature or change, sync documentation to match the repo state:**
 
 1. **CONTEXT.md** — Update if the change affects:
-   - Architecture decisions (add/update ADR)
+   - Architecture decisions (add ADR in `.scratch/adr/`)
    - Glossary terms
    - Conventions
    - Hardware/networking info
@@ -49,9 +52,9 @@ K8s manifests use `${VAR}` syntax (e.g., `${XIALING_IP}`, `${LAN_CIDR}`) which F
    - Services list
    - Repository structure
 
-3. **Issue tickets** (`.scratch/`)  — Mark completed tasks, update status
+3. **Issue tickets** (`.scratch/homelab-reprovision/issues/`)  — Mark completed tasks, update status
 
-4. **docs/** — Update relevant guides (restore-guide.md, secrets.md)
+4. **docs/** — Update relevant guides (restore-guide.md, secrets.md, ip-plan.yaml)
 
 ## Conventions
 

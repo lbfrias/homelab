@@ -25,198 +25,21 @@ This document captures the shared understanding and key decisions for this homel
 
 ## Architecture Decisions
 
-### ADR-001: Mixed OS (RPi OS + Rocky Linux)
+Architecture Decision Records are in [`.scratch/adr/`](.scratch/adr/):
 
-**Status:** Accepted
-
-**Context:** Need to choose OS for cluster nodes. Options were single OS everywhere or mixed.
-
-**Decision:** Raspberry Pi OS Lite (64-bit) on ARM nodes (peggy, yelena), Rocky Linux 10 on x86 node (xialing).
-
-**Rationale:**
-- RPi OS has best hardware support for Raspberry Pi
-- Rocky Linux provides RHEL practice (used at work)
-- ARM64 support for Rocky on RPi is limited
-- Ansible roles practice with multi-OS management
-
-### ADR-002: All Nodes as K3s Control Plane
-
-**Status:** Accepted
-
-**Context:** K3s cluster topology — dedicated control plane vs shared.
-
-**Decision:** All 3 nodes run as control plane + workers (HA embedded etcd).
-
-**Rationale:**
-- 3 nodes = quorum of 2, survives 1 node failure
-- No wasted resources on dedicated control plane
-- etcd on HDDs (/var) reduces SD card wear
-
-### ADR-003: Containers Instead of VMs for HA/Omada
-
-**Status:** Accepted
-
-**Context:** Home Assistant and Omada Controller were previously VMs. Options: keep as VMs, move to K8s containers.
-
-**Decision:** Run as K8s containers with Multus + macvlan networking.
-
-**Rationale:**
-- VMs have storage overhead (expanding disk images)
-- xialing moving to smaller SSD (120GB)
-- Containers are lighter, fit K8s GitOps model
-- macvlan solves mDNS/multicast requirements
-
-### ADR-004: Multus + Macvlan for LAN Access
-
-**Status:** Accepted
-
-**Context:** Home Assistant needs mDNS for device discovery. Omada needs L2 access for AP adoption.
-
-**Decision:** Use Multus CNI with macvlan secondary interface. Pods get dual interfaces: eth0 (cluster) + net1 (LAN).
-
-**Rationale:**
-- mDNS/multicast requires direct LAN access
-- Dual-interface preserves cluster connectivity
-- Static IPs for infrastructure pods (HA, Omada)
-- Macvlan-shim DaemonSet solves host-to-pod communication
-
-### ADR-005: Flux for GitOps
-
-**Status:** Accepted
-
-**Context:** How to manage K8s workloads — Ansible, Flux, ArgoCD, or manual.
-
-**Decision:** Hybrid — Ansible for node provisioning, Flux for K8s workloads.
-
-**Rationale:**
-- Separation of concerns (infra vs apps)
-- Git as source of truth
-- Auto-reconciliation corrects drift
-- `kubectl apply` as emergency fallback
-
-### ADR-006: Bitwarden Secrets Manager
-
-**Status:** Accepted
-
-**Context:** Repo is public. Secrets cannot be committed, even encrypted.
-
-**Decision:** Bitwarden Secrets Manager Operator syncing secrets from Bitwarden SM. README documents required secrets for others.
-
-**Rationale:**
-- Public repo = no secrets in Git
-- Already using Bitwarden
-- Others can use their own secret store or create manually
-
-### ADR-007: Physical Media Provisioning (Cloud-init + Kickstart)
-
-**Status:** Accepted
-
-**Context:** How to install OS on nodes for full automation.
-
-**Decision:** Physical media with automated first-boot config. Different mechanisms per hardware:
-- **RPi (peggy, yelena):** SD card with Raspberry Pi OS + cloud-init
-- **x86 (xialing):** USB installer with Rocky Linux + Kickstart (internal SSD)
-
-**Rationale:**
-- Simpler than PXE (no DHCP proxy, no boot server)
-- RPi: cloud-init embedded in boot partition works well
-- x86: internal SSD can't be flashed from desktop; USB installer + Kickstart automates install
-- Both achieve same outcome: boot → Ansible-ready
-
-### ADR-008: Hybrid Upgrade Strategy
-
-**Status:** Accepted
-
-**Context:** How to handle OS upgrades (patches vs major versions).
-
-**Decision:** In-place patches via Ansible. Reprovision for major version upgrades.
-
-**Rationale:**
-- Patches are safe to apply in-place
-- Major upgrades risk drift — reprovision ensures clean state
-- If automation is solid, reprovision is fast
-
-### ADR-009: DNS Architecture (dnsdist + Technitium)
-
-**Status:** Accepted
-
-**Context:** Need a DNS solution for the homelab that provides:
-- Ad-blocking / DNS filtering
-- Authoritative DNS for 2 owned domains
-- High availability across all 3 nodes
-- Per-client visibility (no SNAT)
-- GitOps-friendly configuration
-- Metrics export to Prometheus/Grafana
-
-Previous setup used PiHole with MetalLB load balancing. Evaluating alternatives for the new macvlan-based architecture.
-
-**Decision:** Two-tier DNS with dnsdist (load balancer) + Technitium (DNS server), all on macvlan.
-
-Architecture:
-```
-Clients (2 DNS servers configured)
-    │
-    ▼
-dnsdist x2 (macvlan IPs: TBD) ─── VIPs for clients
-    │
-    ▼ round-robin
-Technitium x3 (macvlan IPs: TBD) ─── one per node
-```
-
-**Rationale:**
-
-*Why not PiHole:*
-- Stateful (SQLite DB) — harder to manage in K8s
-- No authoritative DNS support for owned domains
-
-*Why Technitium over Blocky:*
-- Blocky is forwarding-only; can't serve as authoritative for owned domains
-- Technitium handles both recursive resolution + authoritative zones
-- Full HTTP API enables GitOps (no dependency on web UI)
-- Prometheus metrics via exporter
-
-*Why dnsdist over MetalLB:*
-- MetalLB L2 mode is failover-only (1 active node), not true load balancing
-- Most clients only accept 2 DNS servers, but we have 3 Technitium instances
-- dnsdist provides real round-robin across all 3 backends per VIP
-- dnsdist preserves client source IP natively (no SNAT)
-- Purpose-built for DNS — health checks via actual DNS queries
-
-*Why macvlan for everything:*
-- Per-client visibility requires no SNAT — macvlan delivers this
-- Direct L2 path: client → dnsdist → Technitium (no kube-proxy)
-- Stable IPs (manually assigned) vs ephemeral pod IPs
-- Health checks validate the actual serving interface
-
-*Why 2 dnsdist + 3 Technitium:*
-- 2 VIPs match typical client DNS server limit
-- 3 backends for prod simulation (all nodes participate)
-- Each VIP load balances to all 3 backends
-
-**Trade-offs accepted:**
-- Extra component (dnsdist) vs simpler MetalLB
-- Manual IP management for macvlan interfaces
-- dnsdist config is Lua (less familiar than YAML)
-
-### ADR-010: Separate Macvlan NADs per Node Architecture
-
-**Status:** Accepted
-
-**Context:** Macvlan CNI requires a hardcoded parent interface name. Our nodes have different interface names:
-- RPi (peggy, yelena): `eth0`
-- x86 (xialing): `eno1`
-
-**Decision:** Create separate NetworkAttachmentDefinitions per interface family (`macvlan-lan` for eth0, `macvlan-lan-x86` for eno1). Pods use node affinity to land on compatible nodes.
-
-**Alternatives considered:**
-- *Single NAD with dynamic interface detection* — Macvlan CNI doesn't support runtime interface discovery
-- *Rename eno1 → eth0 via udev* — Fragile, breaks predictable naming convention
-- *Label-based NAD selection* — Multus doesn't support selecting NADs based on node labels
-
-**Rationale:**
-- Explicit and reliable
-- Matches community recommendations for heterogeneous clusters
-- Node affinity ensures pods only schedule where their NAD works
+| ADR | Title |
+|-----|-------|
+| [0001](.scratch/adr/0001-mixed-os.md) | Mixed OS (RPi OS + Rocky Linux) |
+| [0002](.scratch/adr/0002-all-nodes-control-plane.md) | All Nodes as K3s Control Plane |
+| [0003](.scratch/adr/0003-containers-not-vms.md) | Containers Instead of VMs for HA/Omada |
+| [0004](.scratch/adr/0004-multus-macvlan.md) | Multus + Macvlan for LAN Access |
+| [0005](.scratch/adr/0005-flux-gitops.md) | Flux for GitOps |
+| [0006](.scratch/adr/0006-bitwarden-secrets.md) | Bitwarden Secrets Manager |
+| [0007](.scratch/adr/0007-physical-media-provisioning.md) | Physical Media Provisioning (Cloud-init + Kickstart) |
+| [0008](.scratch/adr/0008-hybrid-upgrade-strategy.md) | Hybrid Upgrade Strategy |
+| [0009](.scratch/adr/0009-dns-architecture.md) | DNS Architecture (dnsdist + Technitium) |
+| [0010](.scratch/adr/0010-separate-macvlan-nads.md) | Separate Macvlan NADs per Node Architecture |
+| [0011](.scratch/adr/0011-ip-plan-as-source-of-truth.md) | IP Plan as Source of Truth |
 
 ## Five-Step Provisioning Model
 

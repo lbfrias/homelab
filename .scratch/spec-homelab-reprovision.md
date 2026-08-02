@@ -78,6 +78,10 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 25. As a homelab operator, I want NetworkAttachmentDefinitions for both LAN and IoT VLANs, so that pods can join different networks.
 
+26. As a homelab operator, I want all IP allocations defined in a single source-of-truth file, so that I don't have to manually sync configs across Ansible, Flux, and Omada.
+
+27. As a homelab operator, I want Omada Controller configuration synced from Git via API, so that DHCP and network settings are reproducible without manual UI interaction.
+
 ## Implementation Decisions
 
 ### Provisioning Stack Layers
@@ -180,7 +184,7 @@ The Flux Operator extends base Flux with ResourceSet and ResourceSetInputProvide
 
 - Multus installed via thick plugin (K3s-specific path: `/var/lib/rancher/k3s/agent/etc/cni/net.d/`)
 - Whereabouts IPAM for dynamic IP assignment within defined ranges
-- Static IPs for infrastructure pods (HA, Omada, DNS) via pod annotations
+- Static IPs for infrastructure pods (HA, Omada, DNS) defined in `docs/ip-plan.yaml`
 - macvlan-shim DaemonSet creates host interface for node-to-pod communication
 - NetworkAttachmentDefinitions:
   - `lan-macvlan` — 10.0.0.0/24, parent `eth0`
@@ -224,6 +228,32 @@ Technitium x3 (macvlan: TBD) ─── one per node
 - Bitwarden SM Operator with machine account auth
 - BitwardenSecret resources per app namespace
 - Secrets documented in `docs/secrets.md` for manual creation
+
+### IP Plan as Source of Truth (ADR-011)
+
+All IP allocations are defined in `docs/ip-plan.yaml`, which serves as the single source of truth:
+
+**What it defines:**
+- VLANs with DHCP pool ranges
+- K8s node IPs (static via cloud-init/kickstart)
+- Infrastructure pod IPs (macvlan)
+- Static device reservations (DHCP via Omada)
+- Reserved IP ranges by purpose
+
+**Automation (future):**
+- Generator script produces: `vars.yaml`, `cluster-vars.yaml`, cloud-init templates
+- K8s Job syncs DHCP config to Omada Controller via Open API
+- Pre-commit hook validates generated files match source
+
+**Router bootstrap:**
+K8s nodes use static IPs (not DHCP), eliminating the chicken-and-egg dependency on Omada. For full reprovision including factory-reset network hardware:
+1. Run temporary Omada Controller in Docker on dev machine
+2. Script pushes router config via API (LAN IP, DHCP pool)
+3. Router reprovisions to 10.0.0.x network
+4. K8s nodes boot with static IPs
+5. K8s Omada Controller takes over management
+
+See: `.scratch/adr/0011-ip-plan-as-source-of-truth.md`, `.scratch/homelab-reprovision/issues/ip-plan-automation.md`
 
 ### Home Assistant
 
@@ -309,9 +339,9 @@ Periodic (monthly) test:
 
 ### Open Questions to Resolve During Implementation
 
-- **Static IPs for HA and Omada:** Need to finalize addresses (currently TBD in CONTEXT.md)
-- **Parent interface name:** Assumed `eth0`, needs verification on each node
-- **Whereabouts vs static IPAM:** May use static annotations for infrastructure pods, Whereabouts for others
+- ~~**Static IPs for HA and Omada:** Need to finalize addresses~~ → Resolved: defined in `docs/ip-plan.yaml`
+- **Parent interface name:** RPi uses `eth0`, x86 uses `eno1` — separate NADs per node type (see ADR-010)
+- ~~**Whereabouts vs static IPAM:**~~ → Resolved: Whereabouts for dynamic, static annotations for infrastructure pods
 
 ### Migration from Old Repo
 

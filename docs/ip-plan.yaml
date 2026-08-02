@@ -1,0 +1,262 @@
+# IP Address Plan — Source of Truth
+# ==================================
+# All IP allocations for the homelab network.
+#
+# STATUS: DRAFT — IPs below are examples/placeholders. Populate with
+#         actual values before using for automation.
+#
+# This file is:
+#   1. Human-readable network inventory
+#   2. Machine-parseable for automation (future)
+#
+# Automation targets (see ADR-011):
+#   - ansible/vars.yaml
+#   - manifests/infrastructure/controllers/cluster-vars.yaml
+#   - ansible/provisioning/templates/ (cloud-init/kickstart)
+#   - Omada Controller via API (DHCP pools, reservations, VLANs)
+#
+# Workflow: Edit this file → run generator → commit all outputs
+#
+# See: .scratch/adr/0011-ip-plan-as-source-of-truth.md
+
+# =============================================================================
+# NETWORK TOPOLOGY
+# =============================================================================
+
+network:
+  name: homelab
+  domain: local
+
+# =============================================================================
+# VLANs / SUBNETS
+# =============================================================================
+# Each VLAN defines:
+#   - id: VLAN ID (1 = default/untagged)
+#   - name: Human-readable name
+#   - cidr: Network range
+#   - gateway: Router IP for this VLAN
+#   - dhcp: DHCP server configuration (null = no DHCP)
+#   - macvlan_range: Range reserved for K8s macvlan pods (Whereabouts IPAM)
+
+vlans:
+  - id: 1
+    name: LAN
+    cidr: 10.0.0.0/24
+    gateway: 10.0.0.1
+    dhcp:
+      enabled: true
+      range_start: 10.0.0.100
+      range_end: 10.0.0.179
+      lease_time: 1440  # minutes (24 hours)
+      dns_servers:
+        - 10.0.0.1
+    macvlan_range:
+      start: 10.0.0.200
+      end: 10.0.0.239
+    description: Main trusted network
+
+  - id: 300
+    name: IoT
+    cidr: 10.0.30.0/24
+    gateway: 10.0.30.1
+    dhcp:
+      enabled: true
+      range_start: 10.0.30.100
+      range_end: 10.0.30.179
+      lease_time: 1440
+      dns_servers:
+        - 10.0.30.1
+    macvlan_range:
+      start: 10.0.30.200
+      end: 10.0.30.239
+    description: Isolated IoT network (Home Assistant device discovery)
+
+# =============================================================================
+# KUBERNETES INTERNAL NETWORKS
+# =============================================================================
+# Managed by K3s, not Omada. Documented here for completeness.
+
+kubernetes:
+  pod_cidr: 10.42.0.0/16      # Flannel CNI
+  service_cidr: 10.43.0.0/16  # ClusterIP services
+
+# =============================================================================
+# HOSTS — STATIC IP ASSIGNMENTS
+# =============================================================================
+# Categories:
+#   - network_infra: Router, switches, APs (Omada-managed devices)
+#   - k8s_nodes: Kubernetes nodes (static IP via cloud-init/kickstart)
+#   - infra_pods: K8s pods with macvlan IPs (static in manifests)
+#   - servers: Non-K8s servers
+#   - devices: IoT, printers, etc. (DHCP reservation via Omada)
+
+hosts:
+  # ---------------------------------------------------------------------------
+  # Network Infrastructure (Omada-managed devices)
+  # ---------------------------------------------------------------------------
+  # These get IPs via Omada adoption. Listed here for documentation.
+  network_infra:
+    - ip: 10.0.0.1
+      hostname: router
+      model: TP-Link TL-ER605 v1
+      description: Omada router / gateway
+
+    - ip: 10.0.0.2
+      hostname: switch
+      model: TP-Link TL-SG2008P
+      description: PoE switch (8 ports)
+
+    - ip: 10.0.0.3
+      hostname: ap
+      model: TP-Link TL-EAP225
+      description: Wireless access point
+
+  # ---------------------------------------------------------------------------
+  # Kubernetes Nodes
+  # ---------------------------------------------------------------------------
+  # Static IPs configured via cloud-init (RPi) or kickstart (x86).
+  # NOT dependent on DHCP — nodes boot with these IPs baked in.
+  # Generator outputs: vars.yaml, cluster-vars.yaml, cloud-init templates
+  k8s_nodes:
+    - ip: 10.0.0.11
+      hostname: peggy
+      mac: null  # TODO: fill in for inventory completeness
+      os: raspios
+      hardware: Raspberry Pi 4 4GB
+      interface: eth0
+      roles:
+        - control-plane
+        - worker
+      description: RPi 4GB node
+
+    - ip: 10.0.0.12
+      hostname: yelena
+      mac: null
+      os: raspios
+      hardware: Raspberry Pi 4 8GB
+      interface: eth0
+      roles:
+        - control-plane
+        - worker
+      description: RPi 8GB node
+
+    - ip: 10.0.0.13
+      hostname: xialing
+      mac: null
+      os: rocky
+      hardware: HP Prodesk 600 G4 (i5-8500, 16GB)
+      interface: eno1
+      roles:
+        - control-plane
+        - worker
+        - nfs-server
+      description: x86 NAS node
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure Pods (Macvlan static IPs)
+  # ---------------------------------------------------------------------------
+  # K8s pods that need LAN-routable IPs (mDNS, L2 access).
+  # Generator outputs: Pod annotations or values files
+  infra_pods:
+    - ip: 10.0.0.201
+      hostname: omada-controller
+      vlan: 1
+      description: Omada SDN Controller
+
+    - ip: 10.0.0.202
+      hostname: dnsdist-1
+      vlan: 1
+      description: DNS load balancer VIP 1
+
+    - ip: 10.0.0.203
+      hostname: dnsdist-2
+      vlan: 1
+      description: DNS load balancer VIP 2
+
+    - ip: 10.0.0.204
+      hostname: technitium-peggy
+      vlan: 1
+      description: Technitium DNS (peggy)
+
+    - ip: 10.0.0.205
+      hostname: technitium-yelena
+      vlan: 1
+      description: Technitium DNS (yelena)
+
+    - ip: 10.0.0.206
+      hostname: technitium-xialing
+      vlan: 1
+      description: Technitium DNS (xialing)
+
+    - ip: 10.0.30.201
+      hostname: home-assistant
+      vlan: 300
+      description: Home Assistant (IoT VLAN for mDNS discovery)
+
+  # ---------------------------------------------------------------------------
+  # Servers (Non-K8s)
+  # ---------------------------------------------------------------------------
+  servers: []
+  # Example:
+  #   - ip: 10.0.0.20
+  #     hostname: truenas
+  #     mac: "aa:bb:cc:dd:ee:ff"
+  #     description: TrueNAS storage server
+
+  # ---------------------------------------------------------------------------
+  # Static Devices (DHCP Reservations via Omada)
+  # ---------------------------------------------------------------------------
+  # Devices that need predictable IPs but use DHCP (printers, IoT without mDNS).
+  # Generator outputs: Omada API calls for IP-MAC bindings
+  devices:
+    []
+    # Example:
+    #   - ip: 10.0.0.80
+    #     hostname: hp-printer
+    #     mac: "aa:bb:cc:dd:ee:ff"
+    #     vlan: 1
+    #     description: HP LaserJet (no mDNS support)
+    #
+    #   - ip: 10.0.30.50
+    #     hostname: smart-plug-1
+    #     mac: "11:22:33:44:55:66"
+    #     vlan: 300
+    #     description: TP-Link Kasa smart plug
+
+# =============================================================================
+# RESERVED RANGES (Documentation)
+# =============================================================================
+# Defines allocation policy. Generator can validate assignments fit ranges.
+
+reserved_ranges:
+  lan:
+    - range: 10.0.0.1-10.0.0.9
+      purpose: Network infrastructure (router, switches, APs)
+    - range: 10.0.0.10-10.0.0.19
+      purpose: Kubernetes nodes
+    - range: 10.0.0.20-10.0.0.49
+      purpose: Servers (non-K8s)
+    - range: 10.0.0.50-10.0.0.99
+      purpose: Static devices (DHCP reservations)
+    - range: 10.0.0.100-10.0.0.179
+      purpose: DHCP dynamic pool
+    - range: 10.0.0.180-10.0.0.199
+      purpose: Reserved (future use)
+    - range: 10.0.0.200-10.0.0.239
+      purpose: Macvlan pods (Whereabouts IPAM)
+    - range: 10.0.0.240-10.0.0.254
+      purpose: Reserved (future use)
+
+  iot:
+    - range: 10.0.30.1-10.0.30.9
+      purpose: Network infrastructure
+    - range: 10.0.30.10-10.0.30.99
+      purpose: Static IoT devices (DHCP reservations)
+    - range: 10.0.30.100-10.0.30.179
+      purpose: DHCP dynamic pool
+    - range: 10.0.30.180-10.0.30.199
+      purpose: Reserved (future use)
+    - range: 10.0.30.200-10.0.30.239
+      purpose: Macvlan pods (Whereabouts IPAM)
+    - range: 10.0.30.240-10.0.30.254
+      purpose: Reserved (future use)
