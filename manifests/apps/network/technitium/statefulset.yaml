@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: technitium
-          image: technitium/dns-server:13.5.3
+          image: technitium/dns-server:13.6.0
           env:
             - name: DNS_SERVER_DOMAIN
               valueFrom:
