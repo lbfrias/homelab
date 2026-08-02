@@ -188,7 +188,7 @@ hosts:
       vlan: 1
       description: Omada SDN Controller
 
-    - ip: 10.0.30.201
+    - ip: 10.0.30.150
       hostname: home-assistant
       vlan: 300
       description: Home Assistant (IoT VLAN for mDNS discovery)
