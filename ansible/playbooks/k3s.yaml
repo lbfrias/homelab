@@ -2,7 +2,7 @@
 # Step 3: K3s HA Cluster Bootstrap
 #
 # Usage (from ansible/ dir):
-#   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
+#   ansible-playbook -e @vars.yaml playbooks/k3s.yaml
 #
 # Prerequisites:
 #   - Run bootstrap.yaml first (Step 2)

@@ -2,7 +2,7 @@
 # Full Cluster Setup - Steps 2, 3, 4 in sequence
 #
 # Usage (from ansible/ dir):
-#   ansible-playbook -e @vars.local.yaml site.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml site.yaml
 #
 # This runs:
 #   Step 2 (bootstrap): packages, prerequisites, NFS/SMB
@@ -11,12 +11,12 @@
 #
 # Prerequisites:
 #   - Nodes provisioned (Step 1) and reachable via SSH
-#   - vars.local.yaml configured with github_token, github_owner, github_repo
+#   - vars.yaml configured with github_owner, github_repo; secrets.local.yaml with github_token
 #
 # For selective runs, use individual playbooks:
-#   ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml
-#   ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml
-#   ansible-playbook -e @vars.local.yaml playbooks/flux.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/bootstrap.yaml
+#   ansible-playbook -e @vars.yaml playbooks/k3s.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/flux.yaml
 
 - name: "Step 2: Bootstrap"
   ansible.builtin.import_playbook: playbooks/bootstrap.yaml

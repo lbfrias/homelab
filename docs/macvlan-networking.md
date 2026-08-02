@@ -67,7 +67,7 @@ If the interface doesn't exist, pods fail with:
 master "eth0.300" not found
 ```
 
-The `eno1.300` VLAN interface on xialing is created via the `vlan_interface` Ansible role in bootstrap (Step 2). Run `ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml --tags vlan` to create it.
+The `eno1.300` VLAN interface on xialing is created via the `vlan_interface` Ansible role in bootstrap (Step 2). Run `ansible-playbook -e @vars.yaml playbooks/bootstrap.yaml --tags vlan` to create it.
 
 ### Scheduling Limitation
 

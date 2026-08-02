@@ -2,7 +2,7 @@
 # Step 2: Bootstrap - OS-specific setup and NFS/SMB
 #
 # Usage (from ansible/ dir):
-#   ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/bootstrap.yaml
 #
 # What this does:
 #   - Updates package cache

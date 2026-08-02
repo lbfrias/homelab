@@ -1,8 +1,8 @@
 ---
 # Provision a single node
 # Usage (from ansible/ dir):
-#   RPi:   ansible-playbook provisioning/provision-node.yaml -e @vars.local.yaml -e node=peggy -e device=/dev/sdd
-#   Rocky: ansible-playbook provisioning/provision-node.yaml -e @vars.local.yaml -e node=xialing -e device=/dev/sdd
+#   RPi:   ansible-playbook provisioning/provision-node.yaml -e @vars.yaml -e node=peggy -e device=/dev/sdd
+#   Rocky: ansible-playbook provisioning/provision-node.yaml -e @vars.yaml -e node=xialing -e device=/dev/sdd
 
 - name: Provision node
   hosts: localhost
@@ -22,7 +22,7 @@
         that:
           - node is defined
           - device is defined
-        fail_msg: "Usage: ansible-playbook provision-node.yaml -e @vars.local.yaml -e node=<name> -e device=/dev/sdX"
+        fail_msg: "Usage: ansible-playbook provision-node.yaml -e @vars.yaml -e node=<name> -e device=/dev/sdX"
 
     - name: Validate node exists in vars.yaml
       assert:

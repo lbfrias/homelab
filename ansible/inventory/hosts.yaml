@@ -2,7 +2,7 @@
 all:
   vars:
     ansible_python_interpreter: auto_silent
-    # ansible_user and ansible_port loaded via -e @vars.local.yaml
+    # ansible_user and ansible_port loaded via -e @vars.yaml
 
   children:
     # Raspberry Pi nodes

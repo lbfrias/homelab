@@ -2,7 +2,7 @@
 
 **What to build:** Update package cache, install common packages, configure NFS/SMB on xialing.
 
-**Command:** `ansible-playbook -e @vars.local.yaml playbooks/bootstrap.yaml`
+**Command:** `ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/bootstrap.yaml`
 
 **Blocked by:** Step 1 (Provision)
 

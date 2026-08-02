@@ -2,7 +2,7 @@
 
 **What to build:** 3-node K3s cluster with all nodes as control plane (HA embedded etcd).
 
-**Command:** `ansible-playbook -e @vars.local.yaml playbooks/k3s.yaml`
+**Command:** `ansible-playbook -e @vars.yaml playbooks/k3s.yaml`
 
 **Blocked by:** Step 2 (Bootstrap)
 

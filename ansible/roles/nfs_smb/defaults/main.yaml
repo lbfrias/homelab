@@ -3,11 +3,11 @@
 nfs_export_path: /mnt/data
 # nfs_export_networks is a list of networks to export to
 # Example: ["10.0.0.0/24", "10.42.0.0/16"]
-# Comes from -e @vars.local.yaml
+# Comes from -e @vars.yaml
 nfs_export_options: "rw,sync,no_subtree_check,no_root_squash"
 
 # SMB share configuration
 smb_share_name: Library
 smb_share_path: /mnt/data/library
-# smb_force_user comes from -e @vars.local.yaml
+# smb_force_user comes from -e @vars.yaml
 smb_guest_ok: false

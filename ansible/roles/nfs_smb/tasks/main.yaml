@@ -8,6 +8,7 @@
       - nfs-utils
       - samba
       - samba-common
+      - policycoreutils-python-utils
     state: present
   tags: packages
 
@@ -54,3 +55,22 @@
     name: smb
     enabled: true
     state: started
+
+- name: Set SELinux context for Samba share
+  community.general.sefcontext:
+    target: "{{ nfs_export_path }}(/.*)?"
+    setype: samba_share_t
+    state: present
+  register: samba_selinux_context
+
+- name: Apply SELinux context to export path
+  ansible.builtin.command: restorecon -Rv {{ nfs_export_path }}
+  when: samba_selinux_context.changed
+  changed_when: true
+
+- name: Set SMB password for user
+  ansible.builtin.shell: |
+    (echo "{{ smb_password }}"; echo "{{ smb_password }}") | smbpasswd -s -a {{ smb_force_user }}
+  no_log: true
+  when: smb_password is defined
+  changed_when: true

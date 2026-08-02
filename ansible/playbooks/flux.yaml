@@ -2,12 +2,12 @@
 # Step 4: Flux GitOps Bootstrap
 #
 # Usage (from ansible/ dir):
-#   ansible-playbook -e @vars.local.yaml playbooks/flux.yaml
+#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/flux.yaml
 #
 # Prerequisites:
 #   - K3s cluster running (Step 3 complete)
 #   - Kubeconfig configured (default: ~/.kube/config)
-#   - GitHub token in vars.local.yaml: github_token
+#   - GitHub token in secrets.local.yaml: github_token
 #   - GitHub repo configured: github_owner, github_repo
 #
 # What this does:
@@ -37,7 +37,7 @@
           - github_owner is defined
           - github_repo is defined
         fail_msg: |
-          Missing required variables. Add to vars.local.yaml:
+          Missing required variables. Add github_owner/github_repo to vars.yaml and github_token to secrets.local.yaml:
             github_token: ghp_xxx
             github_owner: your-username
             github_repo: homelab

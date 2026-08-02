@@ -1,5 +1,5 @@
 # Provisioning Variables — Infrastructure
-# Sensitive values go in vars.local.yaml (see vars.local.example.yaml)
+# Sensitive values go in secrets.local.yaml (see secrets.local.example.yaml)
 
 # OS image versions (downloaded automatically)
 # RPi: Use directory date from https://downloads.raspberrypi.com/raspios_lite_arm64/images/

@@ -7,7 +7,7 @@
 # Usage (from ansible/ dir):
 #   ansible-playbook -e @vars.yaml -e @secrets.local.yaml site.yaml
 #   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/bootstrap.yaml
-#   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/k3s.yaml
+#   ansible-playbook -e @vars.yaml playbooks/k3s.yaml
 #   ansible-playbook -e @vars.yaml -e @secrets.local.yaml playbooks/flux.yaml
 
 # --- SSH & User Configuration ---

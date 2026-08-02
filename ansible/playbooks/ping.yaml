@@ -1,6 +1,6 @@
 ---
 # Verify connectivity to all cluster nodes
-# Usage (from ansible/ dir): ansible-playbook -e @vars.local.yaml playbooks/ping.yaml
+# Usage (from ansible/ dir): ansible-playbook -e @vars.yaml playbooks/ping.yaml
 
 - name: Ping all nodes
   hosts: all
