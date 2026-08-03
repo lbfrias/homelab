@@ -22,9 +22,9 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 
 ### Technitium (DNS Server)
 
-- [x] Create Technitium StatefulSet in `manifests/apps/network/technitium/`
+- [x] Create Technitium DaemonSet in `manifests/apps/network/technitium/`
 - [x] Configure macvlan with Whereabouts IPAM for IPs (.95, .96, .97)
-- [x] Create volumeClaimTemplate for Technitium data (zone configs)
+- [x] Use emptyDir for Technitium config (zone/records recreated via API on start)
 - [ ] Configure Prometheus metrics exporter
 - [ ] Set up authoritative zones for owned domains (frias.app, levinf.com) via API automation
 - [x] Configure upstream resolvers (Cloudflare, Quad9)
