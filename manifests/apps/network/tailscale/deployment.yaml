@@ -36,6 +36,8 @@ spec:
               value: "tailscale-state"
             - name: TS_ACCEPT_DNS
               value: "false"
+            - name: TS_EXTRA_ARGS
+              value: "--advertise-exit-node"
           securityContext:
             capabilities:
               add:
