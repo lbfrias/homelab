@@ -1,0 +1,97 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: technitium-scripts
+  namespace: dns
+data:
+  configure-proxy.sh: |
+    #!/bin/sh
+    # Configure Technitium PROXY protocol and DNS records via API
+    # Runs as post-start hook after container starts
+    
+    set -e
+    
+    API_URL="http://localhost:5380/api"
+    PASSWORD_FILE="/secrets/admin-password"
+    MAX_RETRIES=30
+    RETRY_INTERVAL=2
+    
+    # dnsdist IPs that will send PROXY protocol traffic
+    PROXY_ACL='["10.0.0.98","10.0.0.99"]'
+    
+    log() {
+      echo "[configure-proxy] $1"
+    }
+    
+    # Wait for Technitium HTTP API to be ready
+    log "Waiting for Technitium API..."
+    retries=0
+    until wget -q -O /dev/null "$API_URL/user/login" 2>/dev/null; do
+      retries=$((retries + 1))
+      if [ $retries -ge $MAX_RETRIES ]; then
+        log "ERROR: Technitium API not ready after $MAX_RETRIES attempts"
+        exit 1
+      fi
+      sleep $RETRY_INTERVAL
+    done
+    log "API is ready"
+    
+    # Read password and URL-encode it
+    PASSWORD=$(cat "$PASSWORD_FILE")
+    ENCODED_PASS=$(echo -n "$PASSWORD" | sed 's/+/%2B/g; s/ /%20/g; s/&/%26/g')
+    
+    # Login to get token
+    log "Logging in..."
+    RESPONSE=$(wget -q -O - "$API_URL/user/login?user=admin&pass=$ENCODED_PASS")
+    TOKEN=$(echo "$RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+    
+    if [ -z "$TOKEN" ]; then
+      log "ERROR: Failed to get API token"
+      exit 1
+    fi
+    log "Got API token"
+    
+    # Configure PROXY protocol settings
+    log "Configuring PROXY protocol settings..."
+    SETTINGS_URL="$API_URL/settings/set?token=$TOKEN"
+    SETTINGS_URL="$SETTINGS_URL&enableDnsOverUdpProxy=true"
+    SETTINGS_URL="$SETTINGS_URL&enableDnsOverTcpProxy=true"
+    SETTINGS_URL="$SETTINGS_URL&dnsOverUdpProxyPort=538"
+    SETTINGS_URL="$SETTINGS_URL&dnsOverTcpProxyPort=538"
+    SETTINGS_URL="$SETTINGS_URL&loggingType=Console"
+    
+    # URL-encode the JSON array for ACL
+    ENCODED_ACL=$(echo -n "$PROXY_ACL" | sed 's/\[/%5B/g; s/\]/%5D/g; s/"/%22/g; s/,/%2C/g')
+    SETTINGS_URL="$SETTINGS_URL&dnsReverseProxyNetworkACL=$ENCODED_ACL"
+    
+    RESPONSE=$(wget -q -O - "$SETTINGS_URL")
+    STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+    
+    if [ "$STATUS" = "ok" ]; then
+      log "PROXY protocol configured successfully"
+    else
+      log "WARNING: Settings may not have applied: $RESPONSE"
+    fi
+    
+    # Create frias.app zone (primary/authoritative)
+    log "Creating frias.app zone..."
+    RESPONSE=$(wget -q -O - "$API_URL/zones/create?token=$TOKEN&zone=frias.app&type=Primary")
+    STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+    if [ "$STATUS" = "ok" ]; then
+      log "Zone frias.app created"
+    else
+      log "Zone frias.app may already exist or failed: $RESPONSE"
+    fi
+    
+    # Add DNS record for hass.frias.app -> 10.0.30.150
+    log "Adding hass.frias.app A record..."
+    RESPONSE=$(wget -q -O - "$API_URL/zones/records/add?token=$TOKEN&zone=frias.app&domain=hass.frias.app&type=A&ipAddress=10.0.30.150&ttl=3600&overwrite=true")
+    STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+    if [ "$STATUS" = "ok" ]; then
+      log "DNS record hass.frias.app -> 10.0.30.150 added"
+    else
+      log "DNS record may already exist or failed: $RESPONSE"
+    fi
+    
+    log "Configuration complete"

@@ -60,6 +60,16 @@ spec:
               readOnly: true
             - name: run
               mountPath: /run
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - "/scripts/configure-proxy.sh &"
           resources:
             requests:
               cpu: 50m
@@ -72,6 +82,10 @@ spec:
             secretName: technitium-admin-password
         - name: run
           emptyDir: {}
+        - name: scripts
+          configMap:
+            name: technitium-scripts
+            defaultMode: 0755
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
