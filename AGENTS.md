@@ -59,6 +59,6 @@ K8s manifests use `${VAR}` syntax (e.g., `${XIALING_IP}`, `${LAN_CIDR}`) which F
 ## Conventions
 
 - YAML files use `.yaml` extension (not `.yml`)
-- Container images should always be version locked
-- Secrets are never committed — use Bitwarden Secrets Manager Operator
+- Container images should always be pinned to a specific version (other tags like latest are not allowed)
+- Secrets are never committed — use Bitwarden Secrets Manager Operator if necessary
 - Node names: peggy (RPi 4GB), yelena (RPi 8GB), xialing (x86 NAS)
