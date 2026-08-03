@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - storageclass.yaml
+  - bitwardensecret.yaml
   - kube-prometheus-stack.yaml
   - loki.yaml
   - alloy.yaml
