@@ -1,8 +1,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - test-branches
-  - longhorn
-  - network
-  - cert-manager
-  - monitoring
+  - bitwardensecret.yaml
+  - ingress.yaml

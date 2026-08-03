@@ -1,0 +1,182 @@
+---
+# kube-prometheus-stack
+#
+# WHAT THIS DEPLOYS:
+#   - Prometheus Operator (manages Prometheus/Alertmanager CRs)
+#   - Prometheus (metrics storage, 14d retention)
+#   - Grafana (visualization)
+#   - Alertmanager (alert routing — disabled initially)
+#   - kube-state-metrics (K8s object metrics)
+#
+# WHAT WE DISABLE:
+#   - node-exporter → Alloy handles host metrics
+#   - K8s component monitors → K3s doesn't expose these endpoints
+#
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: monitoring
+spec:
+  interval: 1h
+  url: https://prometheus-community.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 1h
+  timeout: 10m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "72.6.2"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+  values:
+    # ========================================
+    # Prometheus
+    # ========================================
+    prometheus:
+      prometheusSpec:
+        # Pin to xialing (16GB RAM)
+        nodeSelector:
+          kubernetes.io/hostname: xialing
+        
+        # Retention
+        retention: 14d
+        retentionSize: "15GB"
+        
+        # Storage
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn-monitoring
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 20Gi
+        
+        # Resources
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        
+        # Scrape all ServiceMonitors/PodMonitors across namespaces
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+    
+    # ========================================
+    # Grafana
+    # ========================================
+    grafana:
+      nodeSelector:
+        kubernetes.io/hostname: xialing
+      
+      # Admin credentials from Bitwarden
+      admin:
+        existingSecret: grafana-admin
+        passwordKey: admin-password
+      
+      # Resources
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      
+      # Storage
+      persistence:
+        enabled: true
+        storageClassName: longhorn-monitoring
+        size: 5Gi
+      
+      # Ingress handled separately
+      ingress:
+        enabled: false
+      
+      # Timezone
+      defaultDashboardsTimezone: Asia/Manila
+      
+      # Loki datasource (points to our Loki deployment)
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          url: http://loki.monitoring.svc:3100
+          access: proxy
+          isDefault: false
+    
+    # ========================================
+    # Alertmanager (minimal, expand later)
+    # ========================================
+    alertmanager:
+      alertmanagerSpec:
+        nodeSelector:
+          kubernetes.io/hostname: xialing
+        
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn-monitoring
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 1Gi
+    
+    # ========================================
+    # kube-state-metrics
+    # ========================================
+    kubeStateMetrics:
+      enabled: true
+    
+    kube-state-metrics:
+      nodeSelector:
+        kubernetes.io/hostname: xialing
+      
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+    
+    # ========================================
+    # DISABLE node-exporter (Alloy handles this)
+    # ========================================
+    nodeExporter:
+      enabled: false
+    prometheus-node-exporter:
+      enabled: false
+    
+    # ========================================
+    # DISABLE K3s components (not exposed)
+    # ========================================
+    kubeApiServer:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeProxy:
+      enabled: false
+    kubeEtcd:
+      enabled: false
