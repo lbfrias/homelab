@@ -9,5 +9,3 @@ resources:
   - multus
   - cert-manager
   - nginx-ingress
-  - kube-prometheus-stack
-  - loki
