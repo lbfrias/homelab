@@ -49,7 +49,7 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 - [x] Verify: DNS queries resolve correctly via both VIPs
 - [x] Verify: Queries are distributed across all 3 Technitium instances
 - [x] Verify: Ad-blocking works (ads.google.com, pagead2.googlesyndication.com blocked)
-- [ ] Verify: Technitium logs show real client IPs (not dnsdist IPs)
+- [x] Verify: Technitium logs show real client IPs (via PROXY protocol on port 538)
 - [ ] Verify: Authoritative zones respond correctly
 - [ ] Verify: Failover works (stop one Technitium, queries still succeed)
 
@@ -69,8 +69,11 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 
 ## Notes
 
-- dnsdist preserves client source IP natively — no special config needed
+- dnsdist uses PROXY protocol (port 538) to pass real client IPs to Technitium
+- Technitium requires Reverse Proxy ACL configured with dnsdist IPs (10.0.0.98, 10.0.0.99)
+- Health checks use regular DNS port 53 (healthCheckPort option in dnsdist)
 - Technitium API enables GitOps for zone management (no web UI dependency)
 - See ADR-009 in CONTEXT.md for full rationale
 - Interface unified to 'eno1' across all nodes (RPi renamed from eth0)
 - Technitium image requires emptyDir at /run due to read-only filesystem
+- dnsdist deployment uses maxSurge: 0 to prevent IP exhaustion during rolling updates
