@@ -15,7 +15,8 @@ metadata:
   namespace: flux-system
   annotations:
     reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "tailscale"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "tailscale,cert-manager"
 type: Opaque
 data:
   token: <YOUR_BASE64_ENCODED_TOKEN>
