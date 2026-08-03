@@ -16,7 +16,7 @@ metadata:
   annotations:
     reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
     reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "tailscale,cert-manager,cloudflared"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "tailscale,cert-manager,cloudflared,monitoring"
 type: Opaque
 data:
   token: <YOUR_BASE64_ENCODED_TOKEN>
