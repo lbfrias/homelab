@@ -145,25 +145,28 @@ Platform-specific requirements discovered during cluster bootstrap:
 
 ### Static IPs (Infrastructure)
 
-| Service | IP |
-|---------|-----|
-| Home Assistant | TBD (IoT VLAN) |
-| Omada Controller | TBD (LAN) |
-| dnsdist (VIP 1) | TBD |
-| dnsdist (VIP 2) | TBD |
-| Technitium (peggy) | TBD |
-| Technitium (yelena) | TBD |
-| Technitium (xialing) | TBD |
+| Service | IP | VLAN |
+|---------|-----|------|
+| NGINX Ingress | 10.0.0.30 | LAN |
+| Technitium DNS | 10.0.0.95-97 | LAN |
+| dnsdist VIP 1 | 10.0.0.98 | LAN |
+| dnsdist VIP 2 | 10.0.0.99 | LAN |
+| Home Assistant | 10.0.30.150 | IoT |
+| Omada Controller (planned) | 10.0.0.201 | LAN |
 
 ## Services
 
-### Current (migrating from homelab-ansible)
+### Deployed
 
 - **Media:** Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr, Transmission, Kavita, Mylar3
-- **Network:** dnsdist, Technitium, Tailscale, Omada Controller
-- **Home Automation:** Home Assistant
-- **Storage:** Longhorn, NFS from xialing
-- **Monitoring:** Prometheus + Grafana (deferred)
+- **Network:** dnsdist + Technitium (DNS), Tailscale, Cloudflare Tunnel
+- **Home Automation:** Home Assistant (IoT VLAN macvlan for mDNS)
+- **Infrastructure:** Longhorn, Multus, NGINX Ingress, cert-manager, Reflector, Flux Operator, Bitwarden Secrets Manager Operator
+
+### Planned
+
+- **Network:** Omada Controller (issue ready, not yet deployed)
+- **Monitoring:** Prometheus + Grafana
 
 ## Repository Structure
 
@@ -181,19 +184,21 @@ homelab/
 │   └── roles/
 │       ├── common/              # Shared tasks (packages, sysctl, modules)
 │       ├── nfs_smb/             # NFS/SMB server (xialing only)
-│       └── prereqs/             # OS-specific K8s prerequisites
+│       └── vlan_interface/      # Creates VLAN subinterfaces (eno1.300)
 ├── manifests/                   # Step 5: K8s workloads (Flux watches)
-│   ├── flux/                    # Flux bootstrap files (GitRepository, Kustomization)
+│   ├── flux-system/             # Flux bootstrap files (GitRepository, Kustomization)
 │   ├── infrastructure/
-│   │   ├── controllers/         # Longhorn, Bitwarden SM, Multus
-│   │   └── configs/             # NADs, ClusterSecretStore
+│   │   ├── controllers/         # Longhorn, Bitwarden SM, Multus, NGINX, cert-manager
+│   │   └── configs/             # NADs, ClusterIssuer, Longhorn backup target
 │   └── apps/
 │       ├── media/               # Jellyfin, *arr stack
-│       ├── network/             # dnsdist, Technitium, Tailscale, Omada
+│       ├── network/             # dnsdist, Technitium, Tailscale, Cloudflared
 │       └── home/                # Home Assistant
 ├── docs/
-│   ├── restore-guide.md
-│   └── secrets.md
+│   ├── ip-plan.yaml             # IP address allocation source of truth
+│   ├── macvlan-networking.md    # Multus/macvlan usage guide
+│   ├── restore-guide.md         # Disaster recovery procedures
+│   └── secrets.md               # Required secrets for reproduction
 ├── CONTEXT.md                   # This file
 └── README.md
 ```

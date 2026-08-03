@@ -82,6 +82,12 @@ The entire stack is version-controlled in a public repo, serving as both disaste
 
 27. As a homelab operator, I want Omada Controller configuration synced from Git via API, so that DHCP and network settings are reproducible without manual UI interaction.
 
+28. As a homelab operator, I want NGINX Ingress Controller with macvlan, so that I can access internal services via domain names with TLS.
+
+29. As a homelab operator, I want cert-manager with Let's Encrypt DNS-01, so that I get valid TLS certificates automatically.
+
+30. As a homelab operator, I want Cloudflare Tunnel for public access, so that I can access services remotely without opening firewall ports.
+
 ## Implementation Decisions
 
 ### Provisioning Stack Layers
@@ -190,6 +196,29 @@ The Flux Operator extends base Flux with ResourceSet and ResourceSetInputProvide
   - `lan-macvlan` — 10.0.0.0/24, parent `eth0`
   - `iot-macvlan` — 10.0.30.0/24, parent `eth0.300` (VLAN 300 tagged)
 
+### NGINX Ingress Controller
+
+- NGINX Ingress deployed via HelmRelease with macvlan interface
+- Static IP `10.0.0.30` on LAN for internal service access
+- IngressClass `nginx` set as default
+- All apps accessible via `*.frias.app` domain with valid TLS
+
+### cert-manager + Let's Encrypt
+
+- cert-manager v1.21.1 deployed via HelmRelease
+- DNS-01 challenge via Cloudflare API (Zone:DNS:Edit token)
+- ClusterIssuers: `letsencrypt-staging` and `letsencrypt-prod`
+- Cloudflare API token stored in Bitwarden, synced via BitwardenSecret
+- Wildcard certificates for `*.frias.app`
+
+### Cloudflare Tunnel (Public Access)
+
+- cloudflared connector deployed in `cloudflared` namespace
+- Tunnel token stored in Bitwarden, synced via BitwardenSecret
+- Public hostname configured in Cloudflare dashboard (Networking → Tunnels)
+- Currently exposed: `home.frias.app` → Home Assistant
+- Zero open ports required on firewall
+
 ### DNS Architecture (dnsdist + Technitium)
 
 Two-tier DNS on macvlan for HA with per-client visibility:
@@ -258,9 +287,13 @@ See: `.scratch/adr/0011-ip-plan-as-source-of-truth.md`, `.scratch/homelab-reprov
 ### Home Assistant
 
 - Deployment with dual interfaces (eth0 cluster, net1 macvlan)
-- Static IP on IoT VLAN for mDNS device discovery
+- Static IP on IoT VLAN (10.0.30.150) for mDNS device discovery
 - PVC for `/config` with Longhorn backup
 - Host network access NOT required (macvlan sufficient)
+- Ingress at `home.frias.app` (internal) with Let's Encrypt TLS
+- Public access via Cloudflare Tunnel at `home.frias.app`
+- Required config for reverse proxy: `http.use_x_forwarded_for`, `trusted_proxies`
+- Required components: `my:` (redirect buttons), `zeroconf:` (mDNS)
 
 ### Omada Controller
 
@@ -275,6 +308,15 @@ See: `.scratch/adr/0011-ip-plan-as-source-of-truth.md`, `.scratch/homelab-reprov
 - Shared NFS mount for media files (from xialing 4TB HDD)
 - Individual PVCs for app configs
 - Jellyfin with GPU passthrough for Intel Quick Sync (xialing only, node selector)
+- Ingresses with TLS:
+  - Jellyfin: `watch.frias.app`
+  - Radarr: `movies.frias.app`
+  - Sonarr: `tv.frias.app`
+  - Prowlarr: `indexer.frias.app`
+  - Bazarr: `subs.frias.app`
+  - Transmission: `downloads.frias.app`
+  - Kavita: `read.frias.app`
+  - Mylar3: `comics.frias.app`
 
 ## Testing Decisions
 
@@ -328,11 +370,11 @@ Periodic (monthly) test:
 ## Out of Scope
 
 - **Monitoring stack (Prometheus/Grafana):** Deferred to future spec
-- **Ingress controller:** Not needed initially; services accessed via LoadBalancer IPs
+- ~~**Ingress controller:** Not needed initially; services accessed via LoadBalancer IPs~~ → Implemented: NGINX Ingress with macvlan
 - **CI/CD pipeline:** Manual flux reconciliation or `flux reconcile` sufficient
 - **Multi-cluster:** Single homelab cluster only
 - **Cloud backup:** NAS-only backup; offsite backup is future work
-- **Cert-manager/TLS:** Internal services, no HTTPS required initially
+- ~~**Cert-manager/TLS:** Internal services, no HTTPS required initially~~ → Implemented: Let's Encrypt with DNS-01 via Cloudflare
 - **Node auto-scaling:** Fixed 3-node cluster
 
 ## Further Notes

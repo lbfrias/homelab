@@ -22,9 +22,11 @@ ansible-playbook -e @vars.yaml -e @secrets.local.yaml site.yaml
 This runs Steps 2-4 (bootstrap, K3s, Flux) in sequence. Kubeconfig is saved locally automatically.
 
 Flux will install (in order):
-1. Multus + Whereabouts CNI
-2. Longhorn (with backup target pre-configured via GitOps)
-3. Bitwarden Secrets Manager Operator
+1. Flux Operator + Reflector
+2. Multus + Whereabouts CNI
+3. Longhorn (with NFS backup target pre-configured via GitOps)
+4. Bitwarden Secrets Manager Operator
+5. cert-manager + NGINX Ingress
 
 ### 2. Restore Volumes
 

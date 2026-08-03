@@ -64,14 +64,13 @@ The operator syncs the Bitwarden secret → Kubernetes secret automatically.
 | Secret Name | Keys | Used By |
 |-------------|------|---------|
 | `k3s-token` | `token` | K3s cluster join token |
-| `longhorn-backup-credentials` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Longhorn S3 backups (if using S3) |
 
 ### Networking
 
 | Secret Name | Keys | Used By |
 |-------------|------|---------|
 | `tailscale-auth` | `authkey` | Tailscale operator |
-| `pihole-admin` | `password` | PiHole web UI |
+| `cloudflared-tunnel-token` | `token` | Cloudflare Tunnel daemon |
 
 ### Media Stack
 
@@ -112,7 +111,7 @@ Organize secrets in Bitwarden Secrets Manager:
 Project: homelab
 ├── k3s-token
 ├── tailscale-auth
-├── pihole-admin
+├── cloudflared-tunnel-token
 ├── radarr-api-key
 ├── sonarr-api-key
 ├── prowlarr-api-key
