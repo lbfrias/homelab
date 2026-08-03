@@ -10,6 +10,13 @@ metadata:
     app: dnsdist
 spec:
   replicas: 2
+  # maxSurge: 0 ensures old pod terminates before new one starts
+  # Required when using Whereabouts IPAM with limited IP range
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: dnsdist
