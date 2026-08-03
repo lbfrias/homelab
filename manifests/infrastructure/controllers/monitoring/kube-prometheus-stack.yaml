@@ -81,7 +81,8 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: xialing
       
-      # Admin credentials from Bitwarden
+      # Admin credentials from Bitwarden (password only, user is static)
+      adminUser: admin
       admin:
         existingSecret: grafana-admin
         passwordKey: admin-password
