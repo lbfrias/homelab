@@ -60,12 +60,30 @@ spec:
               readOnly: true
             - name: run
               mountPath: /run
+            - name: status
+              mountPath: /status
           resources:
             requests:
               cpu: 50m
               memory: 128Mi
             limits:
               memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "test -f /status/configured"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5380
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
         # Sidecar to configure Technitium via API (has wget)
         - name: configure
           image: busybox:1.36
@@ -73,7 +91,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              /scripts/configure-proxy.sh
+              /scripts/configure-proxy.sh && touch /status/configured
               echo "Configuration complete, sleeping..."
               sleep infinity
           volumeMounts:
@@ -83,6 +101,8 @@ spec:
             - name: scripts
               mountPath: /scripts
               readOnly: true
+            - name: status
+              mountPath: /status
           resources:
             requests:
               cpu: 5m
@@ -94,6 +114,8 @@ spec:
           secret:
             secretName: technitium-admin-password
         - name: run
+          emptyDir: {}
+        - name: status
           emptyDir: {}
         - name: scripts
           configMap:
