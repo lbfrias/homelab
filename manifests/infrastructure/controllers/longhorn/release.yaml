@@ -15,6 +15,9 @@ metadata:
   namespace: longhorn-system
 spec:
   interval: 1h
+  # Longhorn's post-upgrade hook Job can exceed Helm's default 5m timeout
+  # (observed ~5m30s), causing a false-negative "Failed" status.
+  timeout: 15m
   chart:
     spec:
       chart: longhorn
@@ -34,5 +37,8 @@ spec:
       # Backup target managed via BackupTarget CR (configs/longhorn/backup-target.yaml)
       # Store data on HDDs mounted at /var (per ADR-002)
       defaultDataPath: /var/lib/longhorn
-      # Replica auto-balance for even distribution
-      replicaAutoBalance: best-effort
+      # Auto-upgrade attached volumes' engines to the default image after a
+      # Longhorn upgrade (live upgrade), so engines don't lag behind. Does NOT
+      # relocate an already-current engine off an old instance-manager — that
+      # still requires detach/reattach of the volume.
+      concurrentAutomaticEngineUpgradePerNodeLimit: 3
