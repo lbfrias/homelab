@@ -1,0 +1,34 @@
+---
+# Longhorn node configuration with tags for storage placement
+# monitoring-storage tag: used by longhorn-monitoring StorageClass
+apiVersion: longhorn.io/v1beta2
+kind: Node
+metadata:
+  name: peggy
+  namespace: longhorn-system
+spec:
+  name: peggy
+  allowScheduling: true
+  tags:
+    - monitoring-storage
+---
+apiVersion: longhorn.io/v1beta2
+kind: Node
+metadata:
+  name: yelena
+  namespace: longhorn-system
+spec:
+  name: yelena
+  allowScheduling: true
+  tags:
+    - monitoring-storage
+---
+apiVersion: longhorn.io/v1beta2
+kind: Node
+metadata:
+  name: xialing
+  namespace: longhorn-system
+spec:
+  name: xialing
+  allowScheduling: true
+  tags: []

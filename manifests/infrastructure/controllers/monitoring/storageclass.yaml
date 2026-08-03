@@ -1,6 +1,6 @@
 ---
 # StorageClass for monitoring stack
-# 2 replicas on peggy/yelena only (xialing scheduling disabled in Longhorn)
+# 2 replicas restricted to nodes with monitoring-storage tag (peggy/yelena)
 # Retain policy — monitoring data is important for debugging
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -10,6 +10,7 @@ provisioner: driver.longhorn.io
 parameters:
   numberOfReplicas: "2"
   staleReplicaTimeout: "30"
+  nodeSelector: "monitoring-storage"
 reclaimPolicy: Retain
 volumeBindingMode: Immediate
 allowVolumeExpansion: true
