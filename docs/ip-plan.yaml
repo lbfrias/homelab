@@ -188,6 +188,11 @@ hosts:
       vlan: 1
       description: Omada SDN Controller
 
+    - ip: 10.0.0.30
+      hostname: nginx-ingress
+      vlan: 1
+      description: NGINX Ingress Controller (internal services via *.frias.app)
+
     - ip: 10.0.30.150
       hostname: home-assistant
       vlan: 300
@@ -235,7 +240,7 @@ reserved_ranges:
     - range: 10.0.0.10-10.0.0.19
       purpose: Kubernetes nodes
     - range: 10.0.0.20-10.0.0.49
-      purpose: Servers (non-K8s)
+      purpose: Infrastructure services (NGINX Ingress at .30, non-K8s servers)
     - range: 10.0.0.50-10.0.0.94
       purpose: Static devices (DHCP reservations)
     - range: 10.0.0.95-10.0.0.99

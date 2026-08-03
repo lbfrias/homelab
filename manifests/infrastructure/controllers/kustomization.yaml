@@ -7,3 +7,5 @@ resources:
   - bitwarden-sm-operator
   - longhorn
   - multus
+  - cert-manager
+  - nginx-ingress

@@ -1,0 +1,68 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  interval: 1h
+  url: https://kubernetes.github.io/ingress-nginx
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: ingress-nginx
+      version: "4.15.1"
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+  values:
+    controller:
+      # Use Deployment (single replica with macvlan IP)
+      kind: Deployment
+      replicaCount: 1
+
+      # Macvlan networking: pod gets LAN IP directly via static IPAM
+      # Uses macvlan-lan NAD from default namespace with static IP assignment
+      podAnnotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{"name": "macvlan-lan", "namespace": "default", "ips": ["10.0.0.30/24"]}]
+
+      # Don't use hostNetwork - macvlan provides LAN access
+      hostNetwork: false
+
+      # Service is ClusterIP since we're using macvlan for external access
+      service:
+        type: ClusterIP
+
+      # IngressClass configuration
+      ingressClassResource:
+        name: nginx
+        enabled: true
+        default: true
+        controllerValue: "k8s.io/ingress-nginx"
+
+      # Resource limits for homelab
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+
+      # Metrics for future Prometheus integration
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: false  # Enable when Prometheus is deployed
+
+    # Default backend not needed
+    defaultBackend:
+      enabled: false

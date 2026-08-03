@@ -21,6 +21,10 @@ data:
   DNSDIST_1_IP: "10.0.0.98"
   DNSDIST_2_IP: "10.0.0.99"
   TECHNITIUM_RANGE: "10.0.0.95-10.0.0.97"
+  # Ingress
+  NGINX_INGRESS_IP: "10.0.0.30"
+  # TLS / cert-manager
+  ACME_EMAIL: "levinfrias@gmail.com"
   # GitHub
   GITHUB_OWNER: "lbfrias"
   GITHUB_REPO: "homelab"
