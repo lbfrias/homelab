@@ -21,7 +21,7 @@ spec:
     spec:
       hostname: radarr
       containers:
-      - image: linuxserver/radarr:5.9.1
+      - image: linuxserver/radarr:5.28.0
         name: radarr
         env: 
         - name: PUID
