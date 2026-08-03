@@ -113,6 +113,8 @@ spec:
         - name: admin-password
           secret:
             secretName: technitium-admin-password
+        - name: config
+          emptyDir: {}
         - name: run
           emptyDir: {}
         - name: status
@@ -128,13 +130,3 @@ spec:
                 matchLabels:
                   app: technitium
               topologyKey: kubernetes.io/hostname
-  volumeClaimTemplates:
-    - metadata:
-        name: config
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: longhorn
-        resources:
-          requests:
-            storage: 1Gi
