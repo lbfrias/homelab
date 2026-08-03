@@ -83,14 +83,14 @@ data:
       log "Zone frias.app may already exist or failed: $RESPONSE"
     fi
     
-    # Add DNS record for hass.frias.app -> 10.0.30.150
-    log "Adding hass.frias.app A record..."
-    RESPONSE=$(wget -q -O - "$API_URL/zones/records/add?token=$TOKEN&zone=frias.app&domain=hass.frias.app&type=A&ipAddress=10.0.30.150&ttl=3600&overwrite=true")
+    # Add wildcard DNS record for ingress: *.frias.app -> 10.0.0.30 (NGINX Ingress)
+    log "Adding *.frias.app wildcard A record for NGINX Ingress..."
+    RESPONSE=$(wget -q -O - "$API_URL/zones/records/add?token=$TOKEN&zone=frias.app&domain=*.frias.app&type=A&ipAddress=10.0.0.30&ttl=3600&overwrite=true")
     STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
     if [ "$STATUS" = "ok" ]; then
-      log "DNS record hass.frias.app -> 10.0.30.150 added"
+      log "DNS record *.frias.app -> 10.0.0.30 added"
     else
-      log "DNS record may already exist or failed: $RESPONSE"
+      log "Wildcard DNS record may already exist or failed: $RESPONSE"
     fi
     
     log "Configuration complete"

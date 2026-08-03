@@ -54,15 +54,15 @@ Jellyfin, Radarr, Sonarr, etc.
 
 ### DNS Configuration
 
-- [ ] Configure Technitium zone for `frias.app` (override for internal resolution)
-- [ ] Add wildcard A record: `*.frias.app → 10.0.0.30`
+- [x] Configure Technitium zone for `frias.app` (override for internal resolution)
+- [x] Add wildcard A record: `*.frias.app → 10.0.0.30`
 - [ ] Verify: `dig jellyfin.frias.app @10.0.0.95` returns `10.0.0.30`
 
-### Sample Ingress (Jellyfin)
+### Sample Ingress (Home Assistant)
 
-- [ ] Create Ingress resource for Jellyfin at `jellyfin.frias.app`
-- [ ] Configure TLS with cert-manager annotation
-- [ ] Verify: `https://jellyfin.frias.app` works from LAN client
+- [x] Create Ingress resource for Home Assistant at `hass.frias.app`
+- [x] Configure TLS with cert-manager annotation
+- [ ] Verify: `https://hass.frias.app` works from LAN client
 
 ### IP Plan Updates
 
