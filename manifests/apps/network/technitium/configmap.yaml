@@ -17,8 +17,8 @@ data:
     MAX_RETRIES=30
     RETRY_INTERVAL=2
     
-    # dnsdist IPs that will send PROXY protocol traffic
-    PROXY_ACL='["10.0.0.98","10.0.0.99"]'
+    # dnsdist IPs that will send PROXY protocol traffic (comma-separated)
+    PROXY_ACL='10.0.0.98,10.0.0.99'
     
     log() {
       echo "[configure-proxy] $1"
@@ -61,9 +61,8 @@ data:
     SETTINGS_URL="$SETTINGS_URL&dnsOverTcpProxyPort=538"
     SETTINGS_URL="$SETTINGS_URL&loggingType=Console"
     
-    # URL-encode the JSON array for ACL
-    ENCODED_ACL=$(echo -n "$PROXY_ACL" | sed 's/\[/%5B/g; s/\]/%5D/g; s/"/%22/g; s/,/%2C/g')
-    SETTINGS_URL="$SETTINGS_URL&dnsReverseProxyNetworkACL=$ENCODED_ACL"
+    # No URL encoding needed for comma-separated ACL
+    SETTINGS_URL="$SETTINGS_URL&dnsReverseProxyNetworkACL=$PROXY_ACL"
     
     RESPONSE=$(wget -q -O - "$SETTINGS_URL")
     STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
