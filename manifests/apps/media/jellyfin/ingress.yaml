@@ -2,24 +2,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: home-assistant
-  namespace: home
+  name: jellyfin
+  namespace: media
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - home.frias.app
-      secretName: home-frias-app-tls
+        - watch.frias.app
+      secretName: watch-frias-app-tls
   rules:
-    - host: home.frias.app
+    - host: watch.frias.app
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: home-assistant
+                name: jellyfin-tcp
                 port:
-                  number: 8123
+                  number: 8096
