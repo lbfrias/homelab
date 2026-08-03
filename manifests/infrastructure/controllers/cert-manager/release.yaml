@@ -27,6 +27,10 @@ spec:
   upgrade:
     crds: CreateReplace
   values:
+    # Install CRDs
+    crds:
+      enabled: true
+
     # Resource limits for homelab
     resources:
       requests:
