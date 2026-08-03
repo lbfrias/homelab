@@ -18,7 +18,8 @@ data:
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
-      useProxyProtocol = true
+      useProxyProtocol = true,
+      healthCheckPort = 53  -- Health checks use regular DNS port
     })
 
     newServer({
@@ -27,7 +28,8 @@ data:
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
-      useProxyProtocol = true
+      useProxyProtocol = true,
+      healthCheckPort = 53
     })
 
     newServer({
@@ -36,7 +38,8 @@ data:
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
-      useProxyProtocol = true
+      useProxyProtocol = true,
+      healthCheckPort = 53
     })
 
     -- Round-robin load balancing policy (default)
