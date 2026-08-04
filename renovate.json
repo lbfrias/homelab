@@ -16,9 +16,13 @@
   },
   "packageRules": [
     {
-      "description": "Group all infrastructure controller updates",
-      "matchPaths": ["manifests/infrastructure/controllers/**"],
-      "groupName": "infrastructure-controllers",
+      "description": "Leaf-level grouping for apps (each app directory = one PR)",
+      "matchPaths": ["manifests/apps/**"],
+      "groupName": "{{parentDir}}"
+    },
+    {
+      "description": "Schedule infrastructure updates for Monday morning",
+      "matchPaths": ["manifests/infrastructure/**"],
       "schedule": ["before 9am on monday"]
     },
     {

@@ -9,4 +9,3 @@ resources:
   - multus
   - cert-manager
   - nginx-ingress
-  - monitoring

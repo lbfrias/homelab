@@ -22,7 +22,7 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 
 ### Technitium (DNS Server)
 
-- [x] Create Technitium DaemonSet in `manifests/apps/network/technitium/`
+- [x] Create Technitium DaemonSet in `manifests/apps/network/dns/technitium/`
 - [x] Configure macvlan with Whereabouts IPAM for IPs (.95, .96, .97)
 - [x] Use emptyDir for Technitium config (zone/records recreated via API on start)
 - [ ] Configure Prometheus metrics exporter
@@ -32,7 +32,7 @@ Technitium x3 (macvlan: .95-.97 via Whereabouts) ─── one per node
 
 ### dnsdist (Load Balancer)
 
-- [x] Create dnsdist Deployment in `manifests/apps/network/dnsdist/`
+- [x] Create dnsdist Deployment in `manifests/apps/network/dns/dnsdist/`
 - [x] Configure macvlan with Whereabouts IPAM for IPs (.98, .99)
 - [x] Create ConfigMap with Lua config (3 backends, round-robin)
 - [x] Configure health checks (DNS query-based)

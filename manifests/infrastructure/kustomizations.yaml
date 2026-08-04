@@ -17,6 +17,28 @@ spec:
   prune: true
   wait: true
 ---
+# Kustomization for observability stack (depends on controllers for storage/certs)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infrastructure-observability
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./manifests/infrastructure/observability
+  prune: true
+  dependsOn:
+    - name: infrastructure-controllers
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+---
 # Kustomization for infrastructure configs (depends on controllers)
 # These create resources using CRDs from controllers
 apiVersion: kustomize.toolkit.fluxcd.io/v1

@@ -54,7 +54,7 @@ Configuration is split between Ansible (node provisioning) and Flux (K8s manifes
 - **Home Automation:** Home Assistant (with mDNS device discovery via IoT VLAN macvlan)
 - **Network:** dnsdist + Technitium (DNS), Tailscale, Cloudflare Tunnel, Omada Controller (planned)
 - **Infrastructure:** NGINX Ingress, cert-manager (Let's Encrypt), Longhorn, Bitwarden Secrets Manager Operator
-- **Monitoring:** Prometheus + Grafana (planned)
+- **Observability:** Prometheus, Grafana, Loki, Alloy
 
 ## Repository Structure
 
@@ -69,7 +69,14 @@ homelab/
 │   └── roles/
 ├── manifests/               # Step 5 (Flux-managed)
 │   ├── infrastructure/
+│   │   ├── controllers/     # Operators: Longhorn, cert-manager, NGINX, etc.
+│   │   ├── configs/         # NADs, ClusterIssuers, backup targets
+│   │   └── observability/   # Prometheus, Loki, Alloy, Grafana
 │   └── apps/
+│       ├── media/           # Jellyfin, *arr stack
+│       ├── network/
+│       │   └── dns/         # dnsdist, Technitium
+│       └── home/            # Home Assistant
 └── docs/
 ```
 

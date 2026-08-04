@@ -40,6 +40,7 @@ Architecture Decision Records are in [`.scratch/adr/`](.scratch/adr/):
 | [0009](.scratch/adr/0009-dns-architecture.md) | DNS Architecture (dnsdist + Technitium) |
 | [0010](.scratch/adr/0010-separate-macvlan-nads.md) | Separate Macvlan NADs per Node Architecture |
 | [0011](.scratch/adr/0011-ip-plan-as-source-of-truth.md) | IP Plan as Source of Truth |
+| [0012](.scratch/adr/0012-directory-structure-and-renovate-grouping.md) | Directory Structure and Renovate Grouping |
 
 ## Five-Step Provisioning Model
 
@@ -188,11 +189,15 @@ homelab/
 ├── manifests/                   # Step 5: K8s workloads (Flux watches)
 │   ├── flux-system/             # Flux bootstrap files (GitRepository, Kustomization)
 │   ├── infrastructure/
-│   │   ├── controllers/         # Longhorn, Bitwarden SM, Multus, NGINX, cert-manager
-│   │   └── configs/             # NADs, ClusterIssuer, Longhorn backup target
+│   │   ├── controllers/         # Operators: Longhorn, Bitwarden SM, Multus, NGINX, cert-manager
+│   │   ├── configs/             # NADs, ClusterIssuer, Longhorn backup target
+│   │   └── observability/       # Metrics/logs: Prometheus, Loki, Alloy
 │   └── apps/
 │       ├── media/               # Jellyfin, *arr stack
-│       ├── network/             # dnsdist, Technitium, Tailscale, Cloudflared
+│       ├── network/
+│       │   ├── dns/             # dnsdist, Technitium
+│       │   ├── cloudflared/     # Cloudflare tunnel
+│       │   └── tailscale/       # VPN
 │       └── home/                # Home Assistant
 ├── docs/
 │   ├── ip-plan.yaml             # IP address allocation source of truth
@@ -212,6 +217,8 @@ homelab/
 | **xialing** | HP Prodesk 600 G4 node |
 | **macvlan-shim** | Host interface enabling node-to-macvlan-pod communication |
 | **LAN-attached pod** | A pod with a macvlan secondary interface for direct LAN access (e.g., Home Assistant, Omada Controller) |
+| **controller** | A Kubernetes operator or component that reconciles custom resources (e.g., cert-manager, Longhorn, Flux Operator) |
+| **observability** | Infrastructure for metrics, logs, and traces (Prometheus, Loki, Alloy) — distinct from controllers |
 
 ## Conventions
 
