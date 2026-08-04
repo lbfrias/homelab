@@ -31,9 +31,17 @@ spec:
         kind: HelmRepository
         name: grafana
   values:
-    # Run as DaemonSet on all nodes
+    # Run as DaemonSet on all nodes with extra volume mounts
     controller:
       type: daemonset
+      volumes:
+        extra:
+          - name: pods
+            hostPath:
+              path: /var/log/pods
+          - name: machine-id
+            hostPath:
+              path: /etc/machine-id
     
     # Lightweight — runs on RPis too
     resources:
@@ -50,6 +58,18 @@ spec:
     
     # Alloy config (River language)
     alloy:
+      # Mount host paths for log collection
+      mounts:
+        varlog: true
+        dockercontainers: false
+        extra:
+          - name: pods
+            mountPath: /var/log/pods
+            readOnly: true
+          - name: machine-id
+            mountPath: /etc/machine-id
+            readOnly: true
+      
       configMap:
         content: |
           // ========================================
@@ -142,8 +162,3 @@ spec:
               url = "http://loki.observability.svc:3100/loki/api/v1/push"
             }
           }
-    
-    # Mount host paths for metrics and logs
-    mounts:
-      varlog: true
-      dockercontainers: false
