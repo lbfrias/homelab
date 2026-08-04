@@ -22,7 +22,7 @@ spec:
           [{
             "name": "macvlan-iot",
             "namespace": "default",
-            "ips": ["10.0.30.150/24"]
+            "ips": ["10.0.30.150/24"],
             "default-route": ["10.0.30.1"]
           }]
     spec:
