@@ -1,16 +1,16 @@
 ---
-# StorageClass for monitoring stack
-# 2 replicas restricted to nodes with monitoring-storage tag (peggy/yelena)
+# StorageClass for observability stack
+# 2 replicas restricted to nodes with observability-storage tag (peggy/yelena)
 # Delete policy — PVCs cleaned up automatically; data survives Helm uninstall/reinstall
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: longhorn-monitoring
+  name: longhorn-observability
 provisioner: driver.longhorn.io
 parameters:
   numberOfReplicas: "2"
   staleReplicaTimeout: "30"
-  nodeSelector: "monitoring-storage"
+  nodeSelector: "observability-storage"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 allowVolumeExpansion: true

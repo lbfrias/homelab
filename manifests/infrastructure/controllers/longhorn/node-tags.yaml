@@ -1,6 +1,6 @@
 ---
 # Longhorn node configuration with tags for storage placement
-# monitoring-storage tag: used by longhorn-monitoring StorageClass
+# observability-storage tag: used by longhorn-observability StorageClass
 apiVersion: longhorn.io/v1beta2
 kind: Node
 metadata:
@@ -10,7 +10,7 @@ spec:
   name: peggy
   allowScheduling: true
   tags:
-    - monitoring-storage
+    - observability-storage
 ---
 apiVersion: longhorn.io/v1beta2
 kind: Node
@@ -21,7 +21,7 @@ spec:
   name: yelena
   allowScheduling: true
   tags:
-    - monitoring-storage
+    - observability-storage
 ---
 apiVersion: longhorn.io/v1beta2
 kind: Node

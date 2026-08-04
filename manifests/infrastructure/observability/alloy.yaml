@@ -20,7 +20,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: alloy
-  namespace: monitoring
+  namespace: observability
 spec:
   interval: 1h
   chart:
@@ -79,7 +79,7 @@ spec:
           
           prometheus.remote_write "prometheus" {
             endpoint {
-              url = "http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/write"
+              url = "http://kube-prometheus-stack-prometheus.observability.svc:9090/api/v1/write"
             }
           }
           
@@ -139,7 +139,7 @@ spec:
           
           loki.write "loki" {
             endpoint {
-              url = "http://loki.monitoring.svc:3100/loki/api/v1/push"
+              url = "http://loki.observability.svc:3100/loki/api/v1/push"
             }
           }
     
