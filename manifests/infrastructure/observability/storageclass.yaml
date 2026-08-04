@@ -1,7 +1,7 @@
 ---
 # StorageClass for monitoring stack
 # 2 replicas restricted to nodes with monitoring-storage tag (peggy/yelena)
-# Retain policy — monitoring data is important for debugging
+# Delete policy — PVCs cleaned up automatically; data survives Helm uninstall/reinstall
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -11,6 +11,6 @@ parameters:
   numberOfReplicas: "2"
   staleReplicaTimeout: "30"
   nodeSelector: "monitoring-storage"
-reclaimPolicy: Retain
+reclaimPolicy: Delete
 volumeBindingMode: Immediate
 allowVolumeExpansion: true

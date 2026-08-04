@@ -75,7 +75,7 @@ spec:
         ruleSelectorNilUsesHelmValues: false
     
     # ========================================
-    # Grafana
+    # Grafana (stateless)
     # ========================================
     grafana:
       nodeSelector:
@@ -96,12 +96,6 @@ spec:
           cpu: 500m
           memory: 512Mi
       
-      # Storage
-      persistence:
-        enabled: true
-        storageClassName: longhorn-monitoring
-        size: 5Gi
-      
       # Ingress handled separately
       ingress:
         enabled: false
@@ -118,7 +112,7 @@ spec:
           isDefault: false
     
     # ========================================
-    # Alertmanager (minimal, expand later)
+    # Alertmanager (stateless)
     # ========================================
     alertmanager:
       alertmanagerSpec:
@@ -133,15 +127,6 @@ spec:
             cpu: 100m
             memory: 128Mi
         
-        storage:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: longhorn-monitoring
-              accessModes: ["ReadWriteOnce"]
-              resources:
-                requests:
-                  storage: 1Gi
-    
     # ========================================
     # kube-state-metrics
     # ========================================
