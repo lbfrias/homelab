@@ -6,23 +6,33 @@
     ":semanticCommits"
   ],
   "flux": {
-    "fileMatch": ["(^|/)manifests/.+\\.yaml$"]
+    "managerFilePatterns": [
+      "/(^|/)manifests/.+\\.yaml$/"
+    ]
   },
   "helm-values": {
-    "fileMatch": ["(^|/)manifests/.+\\.yaml$"]
+    "managerFilePatterns": [
+      "/(^|/)manifests/.+\\.yaml$/"
+    ]
   },
   "kubernetes": {
-    "fileMatch": ["(^|/)manifests/.+\\.yaml$"]
+    "managerFilePatterns": [
+      "/(^|/)manifests/.+\\.yaml$/"
+    ]
   },
   "packageRules": [
     {
       "description": "Leaf-level grouping for apps (each app directory = one PR)",
-      "matchPaths": ["manifests/apps/**"],
+      "matchFileNames": [
+        "manifests/apps/**"
+      ],
       "groupName": "{{parentDir}}"
     },
     {
       "description": "Schedule infrastructure updates for Monday morning",
-      "matchPaths": ["manifests/infrastructure/**"],
+      "matchFileNames": [
+        "manifests/infrastructure/**"
+      ],
       "schedule": ["before 9am on monday"]
     },
     {
