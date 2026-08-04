@@ -21,7 +21,7 @@ spec:
     spec:
       hostname: jellyfin
       containers:
-      - image: linuxserver/jellyfin:10.11.2
+      - image: linuxserver/jellyfin:10.11.11
         name: jellyfin
         env: 
         - name: PUID
