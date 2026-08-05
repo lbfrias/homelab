@@ -28,7 +28,7 @@ spec:
       hostname: home-assistant
       containers:
       - name: home-assistant
-        image: ghcr.io/home-assistant/home-assistant:2026.7.4
+        image: ghcr.io/home-assistant/home-assistant:2026.8.0
         env:
         - name: TZ
           value: "Asia/Manila"
@@ -42,7 +42,7 @@ spec:
         securityContext:
           privileged: true
       - name: mosquitto
-        image: eclipse-mosquitto:2.0.21
+        image: eclipse-mosquitto:2.0.22
         ports:
         - containerPort: 1883
           name: mqtt
