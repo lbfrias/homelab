@@ -41,10 +41,33 @@ spec:
           mountPath: /config
         securityContext:
           privileged: true
+      - name: mosquitto
+        image: eclipse-mosquitto:2.0.21
+        ports:
+        - containerPort: 1883
+          name: mqtt
+          protocol: TCP
+        volumeMounts:
+        - name: mosquitto-config
+          mountPath: /mosquitto/config/mosquitto.conf
+          subPath: mosquitto.conf
+        - name: mosquitto-data
+          mountPath: /mosquitto/data
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
       volumes:
       - name: config
         persistentVolumeClaim:
           claimName: home-assistant-pvc
+      - name: mosquitto-config
+        configMap:
+          name: mosquitto-config
+      - name: mosquitto-data
+        emptyDir: {}
       restartPolicy: Always
       # Pin to xialing (only node with eno1.300 VLAN interface configured)
       nodeName: xialing
