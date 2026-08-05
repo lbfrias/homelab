@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
         - name: dnsdist
-          image: powerdns/dnsdist-20:2.0.7
+          image: powerdns/dnsdist-20:2.0.8
           args:
             - --config=/etc/dnsdist/dnsdist.conf
             - --supervised
