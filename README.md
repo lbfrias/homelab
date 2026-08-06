@@ -51,7 +51,7 @@ Configuration is split between Ansible (node provisioning) and Flux (K8s manifes
 ## Services
 
 - **Media:** Jellyfin (hardware transcoding), Radarr, Sonarr, Prowlarr, Transmission, Bazarr, Kavita, Mylar3
-- **Home Automation:** Home Assistant (with mDNS device discovery via IoT VLAN macvlan)
+- **Home Automation:** Home Assistant (with mDNS device discovery via IoT VLAN, Wake-on-LAN via LAN)
 - **Network:** dnsdist + Technitium (DNS), Tailscale, Cloudflare Tunnel, Omada Controller (planned)
 - **Infrastructure:** NGINX Ingress, cert-manager (Let's Encrypt), Longhorn, Bitwarden Secrets Manager Operator
 - **Observability:** Prometheus, Grafana, Loki, Alloy

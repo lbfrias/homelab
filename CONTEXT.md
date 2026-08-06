@@ -153,6 +153,7 @@ Platform-specific requirements discovered during cluster bootstrap:
 | dnsdist VIP 1 | 10.0.0.98 | LAN |
 | dnsdist VIP 2 | 10.0.0.99 | LAN |
 | Home Assistant | 10.0.30.150 | IoT |
+| Home Assistant | 10.0.0.25 | LAN |
 | Omada Controller (planned) | 10.0.0.201 | LAN |
 
 ## Services
@@ -161,7 +162,7 @@ Platform-specific requirements discovered during cluster bootstrap:
 
 - **Media:** Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr, Transmission, Kavita, Mylar3
 - **Network:** dnsdist + Technitium (DNS), Tailscale, Cloudflare Tunnel
-- **Home Automation:** Home Assistant (IoT VLAN macvlan for mDNS)
+- **Home Automation:** Home Assistant (IoT VLAN for mDNS, LAN for Wake-on-LAN)
 - **Infrastructure:** Longhorn, Multus, NGINX Ingress, cert-manager, Reflector, Flux Operator, Bitwarden Secrets Manager Operator
 
 ### Planned

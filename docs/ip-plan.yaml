@@ -198,6 +198,11 @@ hosts:
       vlan: 300
       description: Home Assistant (IoT VLAN for mDNS discovery)
 
+    - ip: 10.0.0.25
+      hostname: home-assistant-lan
+      vlan: 1
+      description: Home Assistant (LAN VLAN for Wake-on-LAN)
+
   # ---------------------------------------------------------------------------
   # Servers (Non-K8s)
   # ---------------------------------------------------------------------------

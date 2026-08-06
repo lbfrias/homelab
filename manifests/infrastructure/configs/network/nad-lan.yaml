@@ -1,7 +1,7 @@
 ---
 # NetworkAttachmentDefinition for LAN (10.0.0.0/24)
 # Uses unified 'eno1' interface (configured via unified_lan_interface Ansible role)
-# Uses static IPAM - IP must be specified in pod annotation
+# Uses static IPAM - IP specified in pod annotation
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:

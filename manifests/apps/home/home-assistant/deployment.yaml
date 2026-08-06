@@ -17,13 +17,20 @@ spec:
         app: home-assistant
       annotations:
         # Attach to IoT VLAN for mDNS/SSDP device discovery
-        # Static IP 10.0.30.150 via static IPAM
+        # Attach to LAN VLAN for Wake-on-LAN broadcasts
         k8s.v1.cni.cncf.io/networks: |
-          [{
-            "name": "macvlan-iot",
-            "namespace": "default",
-            "ips": ["10.0.30.150/24"]
-          }]
+          [
+            {
+              "name": "macvlan-iot",
+              "namespace": "default",
+              "ips": ["10.0.30.150/24"]
+            },
+            {
+              "name": "macvlan-lan",
+              "namespace": "default",
+              "ips": ["10.0.0.25/24"]
+            }
+          ]
     spec:
       hostname: home-assistant
       containers:

@@ -38,55 +38,51 @@ Use macvlan when your pod needs:
 
 ## Available NetworkAttachmentDefinitions
 
-NetworkAttachmentDefinitions (NADs) define the macvlan configuration. Different NADs exist because the parent interface name differs between RPi and x86 nodes.
+NetworkAttachmentDefinitions (NADs) define the macvlan configuration. All NADs use the unified `eno1` interface, configured via the `unified_lan_interface` Ansible role.
 
 ### LAN (10.0.0.0/24)
 
-| NAD Name | Parent Interface | Use On |
-|----------|------------------|--------|
-| `macvlan-lan` | eth0 | peggy, yelena (RPi) |
-| `macvlan-lan-x86` | eno1 | xialing (x86) |
+| NAD Name | Parent Interface | Node Requirement |
+|----------|------------------|------------------|
+| `macvlan-lan` | eno1 | xialing only |
 
 IP range: `10.0.0.200` - `10.0.0.239` (reserved for pods, managed manually via pod annotations)
 
 ### IoT VLAN (10.0.30.0/24)
 
-| NAD Name | Parent Interface | Use On |
-|----------|------------------|--------|
-| `macvlan-iot` | eth0.300 | peggy, yelena (RPi) |
-| `macvlan-iot-x86` | eno1.300 | xialing (x86) |
+| NAD Name | Parent Interface | Node Requirement |
+|----------|------------------|------------------|
+| `macvlan-iot` | eno1.300 | xialing only |
 
 IP range: `10.0.30.200` - `10.0.30.239` (reserved for pods, managed manually via pod annotations)
 
+### DNS Infrastructure (10.0.0.0/24)
+
+| NAD Name | Parent Interface | Node Requirement |
+|----------|------------------|------------------|
+| `macvlan-dns-technitium` | eno1 | xialing only |
+| `macvlan-dns-dnsdist` | eno1 | xialing only |
+
+These use Whereabouts IPAM for automatic IP assignment within dedicated ranges.
+
 ### VLAN Interface Prerequisite
 
-**VLAN-tagged NADs require the host to have the VLAN interface pre-created.** The IoT NADs reference `eth0.300` / `eno1.300`, which must exist before pods can use them.
+**VLAN-tagged NADs require the host to have the VLAN interface pre-created.** The IoT NAD references `eno1.300`, which must exist before pods can use it.
 
 If the interface doesn't exist, pods fail with:
 ```
-master "eth0.300" not found
+master "eno1.300" not found
 ```
 
-The `eno1.300` VLAN interface on xialing is created via the `vlan_interface` Ansible role in bootstrap (Step 2). Run `ansible-playbook -e @vars.yaml playbooks/bootstrap.yaml --tags vlan` to create it.
+The `eno1.300` VLAN interface on xialing is created via the `unified_lan_interface` Ansible role in bootstrap (Step 2). Run `ansible-playbook -e @vars.yaml playbooks/bootstrap.yaml --tags vlan` to create it.
 
-### Scheduling Limitation
+### Node Pinning Requirement
 
-**A pod with a NAD annotation cannot dynamically schedule to all nodes.** Each NAD is tied to a specific parent interface. If a pod lands on an incompatible node, it fails:
+**Pods using these NADs must be pinned to xialing** (the only node with `eno1` configured). Use `nodeName: xialing` or a nodeSelector in your pod spec. The Kubernetes scheduler is unaware of NAD compatibility — if a pod lands on peggy or yelena, it fails:
 
 ```
-Failed to create pod sandbox: ... master "eth0" not found
+Failed to create pod sandbox: ... master "eno1" not found
 ```
-
-The Kubernetes scheduler is unaware of NAD compatibility — you must enforce it yourself.
-
-**Options:**
-
-| Approach | When to Use |
-|----------|-------------|
-| Node affinity | Single replica on a known node family |
-| Separate Deployments | One per node family, each with matching NAD |
-| DaemonSet | Run on all nodes, each pod uses local NAD |
-| Skip macvlan | Use Service/Ingress if L2 access not required |
 
 ## Usage Examples
 
@@ -145,43 +141,9 @@ annotations:
     }]
 ```
 
-### Node Affinity (Important!)
-
-Since NADs are tied to specific parent interfaces, you must ensure pods land on the correct node type:
-
-**For RPi nodes (peggy, yelena):**
-
-```yaml
-spec:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values: ["arm64"]
-  containers:
-    # ...
-```
-
-Then use `macvlan-lan` or `macvlan-iot`.
-
-**For x86 node (xialing):**
-
-```yaml
-spec:
-  nodeSelector:
-    kubernetes.io/hostname: xialing
-  containers:
-    # ...
-```
-
-Then use `macvlan-lan-x86` or `macvlan-iot-x86`.
-
 ### Complete Deployment Example
 
-Home Assistant on IoT VLAN with a specific IP:
+Home Assistant on IoT VLAN (for mDNS discovery) and LAN (for Wake-on-LAN):
 
 ```yaml
 apiVersion: apps/v1
@@ -202,17 +164,14 @@ spec:
         k8s.v1.cni.cncf.io/networks: |
           [{
             "name": "macvlan-iot",
-            "ips": ["10.0.30.210/24"]
+            "ips": ["10.0.30.150/24"]
+          },
+          {
+            "name": "macvlan-lan",
+            "ips": ["10.0.0.25/24"]
           }]
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/arch
-                    operator: In
-                    values: ["arm64"]
+      nodeName: xialing  # Pin to node with required VLAN interfaces
       containers:
         - name: home-assistant
           image: homeassistant/home-assistant:latest
