@@ -78,14 +78,6 @@ master "eno1.300" not found
 
 The `eno1.300` VLAN interface on xialing is created via the `unified_lan_interface` Ansible role in bootstrap (Step 2). Run `ansible-playbook -e @vars.yaml playbooks/bootstrap.yaml --tags vlan` to create it.
 
-### Node Pinning Requirement
-
-**Pods using these NADs must be pinned to xialing** (the only node with `eno1` configured). Use `nodeName: xialing` or a nodeSelector in your pod spec. The Kubernetes scheduler is unaware of NAD compatibility — if a pod lands on peggy or yelena, it fails:
-
-```
-Failed to create pod sandbox: ... master "eno1" not found
-```
-
 ## Usage Examples
 
 ### Basic: Static IP (Required)
@@ -226,7 +218,6 @@ spec:
             "ips": ["10.0.0.25/24"]
           }]
     spec:
-      nodeName: xialing  # Pin to node with required VLAN interfaces
       containers:
         - name: home-assistant
           image: homeassistant/home-assistant:latest
