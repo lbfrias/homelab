@@ -42,17 +42,17 @@ NetworkAttachmentDefinitions (NADs) define the macvlan configuration. All NADs u
 
 ### LAN (10.0.0.0/24)
 
-| NAD Name | Parent Interface | Node Requirement |
-|----------|------------------|------------------|
-| `macvlan-lan` | eno1 | xialing only |
+| NAD Name | Parent Interface |
+|----------|------------------|
+| `macvlan-lan` | eno1 |
 
 IP range: `10.0.0.200` - `10.0.0.239` (reserved for pods, managed manually via pod annotations)
 
 ### IoT VLAN (10.0.30.0/24)
 
-| NAD Name | Parent Interface | Node Requirement |
-|----------|------------------|------------------|
-| `macvlan-iot` | eno1.300 | xialing only |
+| NAD Name | Parent Interface |
+|----------|------------------|
+| `macvlan-iot` | eno1.300 |
 
 IP range: `10.0.30.200` - `10.0.30.239` (reserved for pods, managed manually via pod annotations)
 
@@ -60,10 +60,10 @@ IP range: `10.0.30.200` - `10.0.30.239` (reserved for pods, managed manually via
 
 ### DNS Infrastructure (10.0.0.0/24)
 
-| NAD Name | Parent Interface | Node Requirement |
-|----------|------------------|------------------|
-| `macvlan-dns-technitium` | eno1 | xialing only |
-| `macvlan-dns-dnsdist` | eno1 | xialing only |
+| NAD Name | Parent Interface |
+|----------|------------------|
+| `macvlan-dns-technitium` | eno1 |
+| `macvlan-dns-dnsdist` | eno1 |
 
 These use Whereabouts IPAM for automatic IP assignment within dedicated ranges.
 
