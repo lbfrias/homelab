@@ -21,7 +21,7 @@ spec:
     spec:
       hostname: kavita
       containers:
-      - image: kizaing/kavita:0.7.8.2
+      - image: jvmilazz0/kavita:0.9.0.2
         name: kavita
         ports:
         - containerPort: 5000
