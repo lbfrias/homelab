@@ -56,6 +56,8 @@ IP range: `10.0.0.200` - `10.0.0.239` (reserved for pods, managed manually via p
 
 IP range: `10.0.30.200` - `10.0.30.239` (reserved for pods, managed manually via pod annotations)
 
+**Note:** This NAD uses the `sbr` (source-based routing) plugin to handle routing correctly when pods have multiple macvlan interfaces. See [Source-Based Routing](#source-based-routing-sbr-for-multi-interface-pods) for details.
+
 ### DNS Infrastructure (10.0.0.0/24)
 
 | NAD Name | Parent Interface | Node Requirement |
@@ -141,6 +143,59 @@ annotations:
     }]
 ```
 
+### Source-Based Routing (sbr) for Multi-Interface Pods
+
+When a pod has multiple macvlan interfaces on different subnets, routing conflicts can occur. For example, if a pod has:
+- `net1`: 10.0.30.150 (IoT VLAN)
+- `net2`: 10.0.0.25 (LAN)
+
+The LAN interface adds a route `10.0.0.0/24 dev net2`. When a LAN client (10.0.0.x) connects to the IoT IP (10.0.30.150), replies incorrectly go out `net2` instead of `net1`, breaking the connection.
+
+**Solution:** The `sbr` (source-based routing) CNI plugin creates policy routing rules so traffic *from* a specific IP always uses the correct interface.
+
+The IoT NAD (`macvlan-iot`) includes sbr in its plugin chain:
+
+```json
+{
+  "plugins": [
+    {
+      "type": "macvlan",
+      "master": "eno1.300",
+      "mode": "bridge",
+      "ipam": {
+        "type": "static",
+        "routes": [
+          { "dst": "10.0.0.0/16", "gw": "10.0.30.1" }
+        ]
+      }
+    },
+    {
+      "type": "sbr"
+    }
+  ]
+}
+```
+
+**What sbr does:**
+1. Creates a dedicated routing table (e.g., table 100)
+2. Copies the interface's routes to that table
+3. Adds an `ip rule`: `from 10.0.30.150 lookup 100`
+
+**Verify sbr is working:**
+
+```bash
+# Check policy rules
+kubectl exec -n home deploy/home-assistant -- ip rule
+# Output: 32765: from 10.0.30.150 lookup 100
+
+# Check the dedicated routing table
+kubectl exec -n home deploy/home-assistant -- ip route show table 100
+# Output: 10.0.0.0/16 via 10.0.30.1 dev net1
+#         10.0.30.0/24 dev net1 scope link src 10.0.30.150
+```
+
+Now replies from 10.0.30.150 to LAN clients correctly route via the IoT gateway instead of directly via the LAN interface.
+
 ### Complete Deployment Example
 
 Home Assistant on IoT VLAN (for mDNS discovery) and LAN (for Wake-on-LAN):
@@ -219,6 +274,20 @@ Common causes:
 - Verify the pod got the macvlan interface: `kubectl exec <pod> -- ip addr`
 - Check the IP is in the expected range
 - Ensure no firewall blocking on the pod or network
+
+### Multi-interface pod unreachable from some networks
+
+If a pod has multiple macvlan interfaces and is unreachable from certain networks, check for routing conflicts:
+
+```bash
+# Check main routing table
+kubectl exec <pod> -- ip route
+
+# Check if sbr rules exist
+kubectl exec <pod> -- ip rule
+```
+
+If a more-specific route (e.g., `10.0.0.0/24 dev net2`) overrides a gateway route, replies may go out the wrong interface. Solution: use the `sbr` plugin in the NAD to enable source-based routing. See [Source-Based Routing](#source-based-routing-sbr-for-multi-interface-pods).
 
 ### IP conflicts
 

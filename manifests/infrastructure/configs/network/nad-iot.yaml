@@ -3,7 +3,8 @@
 # Used by Home Assistant for device discovery
 # Uses unified 'eno1' interface (configured via unified_lan_interface Ansible role)
 # Interface name is eno1.300 (VLAN 300 carries the 10.0.30.0/24 network)
-# Uses static IPAM - IP must be specified in pod annotation
+# Uses static IPAM with sbr (source-based routing) to ensure replies
+# go out the correct interface when multiple macvlan interfaces exist
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
@@ -14,15 +15,20 @@ spec:
     {
       "cniVersion": "0.3.1",
       "name": "macvlan-iot",
-      "type": "macvlan",
-      "master": "eno1.300",
-      "mode": "bridge",
-      "ipam": {
-        "type": "static",
-        "routes": [
-          { "dst": "10.0.0.0/16",
-            "gw": "10.0.30.1"
+      "plugins": [
+        {
+          "type": "macvlan",
+          "master": "eno1.300",
+          "mode": "bridge",
+          "ipam": {
+            "type": "static",
+            "routes": [
+              { "dst": "10.0.0.0/16", "gw": "10.0.30.1" }
+            ]
           }
-        ]
-      }
+        },
+        {
+          "type": "sbr"
+        }
+      ]
     }
