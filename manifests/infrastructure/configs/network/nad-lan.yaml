@@ -2,6 +2,9 @@
 # NetworkAttachmentDefinition for LAN (10.0.0.0/24)
 # Uses unified 'eno1' interface (configured via unified_lan_interface Ansible role)
 # Uses static IPAM - IP specified in pod annotation
+#
+# Routes: Added for cross-VLAN access (all 10.0.x.x subnets)
+# Without these, return traffic uses eth0 (cluster CNI) instead of macvlan
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
@@ -16,6 +19,9 @@ spec:
       "master": "eno1",
       "mode": "bridge",
       "ipam": {
-        "type": "static"
+        "type": "static",
+        "routes": [
+          { "dst": "10.0.0.0/16", "gw": "10.0.0.1" }
+        ]
       }
     }

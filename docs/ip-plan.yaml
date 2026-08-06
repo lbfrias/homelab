@@ -55,6 +55,21 @@ vlans:
       end: 10.0.0.239
     description: Main trusted network
 
+  - id: 200
+    name: Home
+    cidr: 10.0.20.0/24
+    gateway: 10.0.20.1
+    dhcp:
+      enabled: true
+      range_start: 10.0.20.100
+      range_end: 10.0.20.199
+      lease_time: 1440
+      dns_servers:
+        - 10.0.0.98
+        - 10.0.0.99
+    macvlan_range: null  # No K8s pods on this VLAN
+    description: General home WiFi (phones, laptops, guests)
+
   - id: 300
     name: IoT
     cidr: 10.0.30.0/24

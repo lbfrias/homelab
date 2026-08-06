@@ -2,6 +2,9 @@
 # NetworkAttachmentDefinition for DNS infrastructure (Technitium)
 # Uses Whereabouts IPAM for automatic IP assignment from a dedicated range
 # Range: 10.0.0.95-10.0.0.97 (exactly 3 IPs for 3 Technitium pods)
+#
+# Routes: Added for cross-VLAN access (all 10.0.x.x subnets)
+# Without these, return traffic uses eth0 (cluster CNI) instead of macvlan
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
@@ -18,13 +21,19 @@ spec:
       "ipam": {
         "type": "whereabouts",
         "range": "10.0.0.95-10.0.0.97/24",
-        "gateway": "10.0.0.1"
+        "gateway": "10.0.0.1",
+        "routes": [
+          { "dst": "10.0.0.0/16", "gw": "10.0.0.1" }
+        ]
       }
     }
 ---
 # NetworkAttachmentDefinition for DNS load balancers (dnsdist)
 # Uses Whereabouts IPAM for automatic IP assignment from a dedicated range
 # Range: 10.0.0.98-10.0.0.99 (exactly 2 IPs for 2 dnsdist pods)
+#
+# Routes: Added for cross-VLAN access (all 10.0.x.x subnets)
+# Without these, return traffic uses eth0 (cluster CNI) instead of macvlan
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
@@ -41,6 +50,9 @@ spec:
       "ipam": {
         "type": "whereabouts",
         "range": "10.0.0.98-10.0.0.99/24",
-        "gateway": "10.0.0.1"
+        "gateway": "10.0.0.1",
+        "routes": [
+          { "dst": "10.0.0.0/16", "gw": "10.0.0.1" }
+        ]
       }
     }
