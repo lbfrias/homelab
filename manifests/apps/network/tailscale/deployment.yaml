@@ -15,6 +15,11 @@ spec:
     metadata:
       labels:
         app: tailscale-subnet-router
+      annotations:
+        # Macvlan for L2 LAN access — required to reach other macvlan pods
+        # (e.g., NGINX ingress at 10.0.0.30) when routing Tailscale traffic
+        k8s.v1.cni.cncf.io/networks: |
+          [{"name": "macvlan-lan", "namespace": "default", "ips": ["10.0.0.20/24"]}]
     spec:
       serviceAccountName: tailscale
       containers:
