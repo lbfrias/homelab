@@ -9,6 +9,8 @@ metadata:
     component: radarr
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: media-manager
