@@ -34,6 +34,13 @@ spec:
         - containerPort: 9696
           name: webui
           protocol: TCP
+        resources:
+          requests:
+            cpu: 25m
+            memory: 192Mi
+          limits:
+            cpu: 250m
+            memory: 384Mi
         volumeMounts:
         - name: config
           mountPath: /config

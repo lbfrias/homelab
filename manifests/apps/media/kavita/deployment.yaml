@@ -27,6 +27,13 @@ spec:
         - containerPort: 5000
           name: webui
           protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 768Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
         volumeMounts:
         - name: config
           mountPath: /kavita/config

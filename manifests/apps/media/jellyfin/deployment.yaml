@@ -43,6 +43,13 @@ spec:
         - containerPort: 7359
           name: client-disc
           protocol: UDP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
         volumeMounts:
         - name: hwa
           mountPath: /dev/dri
@@ -56,9 +63,6 @@ spec:
           readOnly: true
         securityContext:
           privileged: true
-      resources:
-        limits:
-        gpu.intel.com/i915: 1
       volumes:
       - name: hwa
         hostPath:
@@ -67,12 +71,12 @@ spec:
         persistentVolumeClaim:
           claimName: jellyfin-pvc
       - name: movies
-        nfs:
-          server: 10.0.0.13
+        hostPath:
           path: /mnt/data/library/movies
+          type: Directory
       - name: tvseries
-        nfs:
-          server: 10.0.0.13
+        hostPath:
           path: /mnt/data/library/tvseries
+          type: Directory
       restartPolicy: Always
       nodeName: xialing

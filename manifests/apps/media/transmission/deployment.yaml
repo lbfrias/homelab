@@ -40,6 +40,13 @@ spec:
         - containerPort: 51413
           name: torrent-udp
           protocol: UDP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
         volumeMounts:
         - name: config
           mountPath: /config
@@ -64,6 +71,13 @@ spec:
         - containerPort: 3000
           name: flood-webui
           protocol: TCP
+        resources:
+          requests:
+            cpu: 5m
+            memory: 128Mi
+          limits:
+            cpu: 50m
+            memory: 256Mi
         volumeMounts:
         - name: config
           mountPath: /config

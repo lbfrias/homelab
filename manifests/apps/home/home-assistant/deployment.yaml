@@ -50,6 +50,13 @@ spec:
           mountPath: /config
         securityContext:
           privileged: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 768Mi
+          limits:
+            cpu: 1000m
+            memory: 1536Mi
       - name: mosquitto
         image: eclipse-mosquitto:2.0.22
         ports:
@@ -64,10 +71,11 @@ spec:
           mountPath: /mosquitto/data
         resources:
           requests:
-            cpu: 10m
-            memory: 32Mi
+            cpu: 5m
+            memory: 8Mi
           limits:
-            memory: 128Mi
+            cpu: 50m
+            memory: 32Mi
       volumes:
       - name: config
         persistentVolumeClaim:
