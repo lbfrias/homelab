@@ -48,13 +48,12 @@ spec:
         persistentVolumeClaim:
           claimName: kavita-pvc
       - name: comics
-        nfs:
-          server: 10.0.0.13
+        hostPath:
           path: /mnt/data/library/comics
-          readOnly: false
+          type: Directory
       - name: books
-        nfs:
-          server: 10.0.0.13
+        hostPath:
           path: /mnt/data/library/books
-          readOnly: false
+          type: Directory
       restartPolicy: Always
+      nodeName: xialing
