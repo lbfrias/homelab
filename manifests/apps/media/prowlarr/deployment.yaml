@@ -51,10 +51,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
+              - key: kubernetes.io/hostname
+                operator: NotIn
                 values:
-                - arm64
+                - peggy
       volumes:
       - name: config
         persistentVolumeClaim:
