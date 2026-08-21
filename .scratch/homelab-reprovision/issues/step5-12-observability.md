@@ -29,6 +29,15 @@ Deploy an observability stack in `manifests/infrastructure/observability/`:
 - [x] Deploy Loki via HelmRelease
 - [x] Configure storage backend
 
+#### Loki Canary (optional)
+
+Loki Canary is a DaemonSet that writes synthetic log entries to Loki and reads them back to measure write/read latency and detect missing logs. Useful for production reliability monitoring.
+
+**To enable:**
+1. Set `lokiCanary.enabled: true` in `loki.yaml` (top-level, not under `monitoring`)
+2. Add ServiceMonitor scraping for canary metrics
+3. Import Loki Canary Grafana dashboard
+
 ### Alloy
 
 - [x] Deploy Alloy via HelmRelease
