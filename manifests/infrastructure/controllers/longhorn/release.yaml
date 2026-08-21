@@ -29,6 +29,8 @@ spec:
     crds: Create
   upgrade:
     crds: CreateReplace
+    remediation:
+      retries: 3
   values:
     persistence:
       # 2 replicas — xialing has ~79GB vs 1TB on RPis

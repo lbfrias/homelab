@@ -1,15 +1,18 @@
 ---
-# Technitium DNS DaemonSet
-# Runs one pod per node natively (DaemonSet)
-# Each pod gets a unique macvlan IP from Whereabouts IPAM (10.0.0.95-97)
+# Technitium DNS StatefulSet
+# Runs 3 replicas spread across nodes via anti-affinity
+# Each pod gets a stable DNS name: technitium-{0,1,2}.technitium.dns.svc.cluster.local
+# Macvlan IPs from Whereabouts IPAM (10.0.0.95-97) for external access
 apiVersion: apps/v1
-kind: DaemonSet
+kind: StatefulSet
 metadata:
   name: technitium
   namespace: dns
   labels:
     app: technitium
 spec:
+  serviceName: technitium
+  replicas: 3
   selector:
     matchLabels:
       app: technitium
@@ -22,16 +25,23 @@ spec:
         k8s.v1.cni.cncf.io/networks: macvlan-dns-technitium
     spec:
       automountServiceAccountToken: false
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: technitium
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: technitium
           image: technitium/dns-server:15.4.0
           env:
-            - name: NODE_NAME
+            - name: POD_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: spec.nodeName
+                  fieldPath: metadata.name
             - name: DNS_SERVER_DOMAIN
-              value: "technitium-$(NODE_NAME)"
+              value: "$(POD_NAME)"
             - name: DNS_SERVER_ADMIN_PASSWORD_FILE
               value: "/secrets/admin-password"
             - name: DNS_SERVER_PREFER_IPV6

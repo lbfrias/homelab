@@ -17,8 +17,8 @@ data:
     MAX_RETRIES=30
     RETRY_INTERVAL=2
     
-    # dnsdist IPs that will send PROXY protocol traffic (comma-separated)
-    PROXY_ACL='10.0.0.98,10.0.0.99'
+    # dnsdist pod network CIDR for PROXY protocol traffic
+    PROXY_ACL='10.42.0.0/16'
     
     log() {
       echo "[configure-proxy] $1"

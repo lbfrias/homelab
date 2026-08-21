@@ -7,23 +7,24 @@ metadata:
 data:
   dnsdist.conf: |
     -- dnsdist configuration for homelab DNS load balancing
-    -- Distributes queries across 3 Technitium backends in round-robin
+    -- Distributes queries across 3 Technitium backends via k8s network
+    -- IPs are resolved from StatefulSet DNS names by init container
 
-    -- Define backend Technitium servers (macvlan IPs from Whereabouts range)
+    -- Define backend Technitium servers (IPs injected by init container)
     -- Port 538 = Technitium's PROXY protocol port for DNS
     -- useProxyProtocol sends real client IP to Technitium for logging
     newServer({
-      address = "10.0.0.95:538",
+      address = "TECHNITIUM_0_IP:538",
       name = "technitium-0",
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
       useProxyProtocol = true,
-      healthCheckPort = 53  -- Health checks use regular DNS port
+      healthCheckPort = 53
     })
 
     newServer({
-      address = "10.0.0.96:538",
+      address = "TECHNITIUM_1_IP:538",
       name = "technitium-1",
       checkName = "google.com",
       checkInterval = 5,
@@ -33,7 +34,7 @@ data:
     })
 
     newServer({
-      address = "10.0.0.97:538",
+      address = "TECHNITIUM_2_IP:538",
       name = "technitium-2",
       checkName = "google.com",
       checkInterval = 5,

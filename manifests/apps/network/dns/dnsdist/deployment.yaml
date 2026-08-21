@@ -28,6 +28,48 @@ spec:
         # Whereabouts IPAM assigns from 10.0.0.98-99 range
         k8s.v1.cni.cncf.io/networks: macvlan-dns-dnsdist
     spec:
+      shareProcessNamespace: true
+      initContainers:
+        # Resolve StatefulSet pod DNS names to IPs for dnsdist config
+        - name: resolve-backends
+          image: busybox:1.38
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Resolving Technitium backend IPs..."
+              # Wait for headless service DNS to be ready
+              for i in $(seq 1 30); do
+                IP0=$(nslookup technitium-0.technitium.dns.svc.cluster.local 2>/dev/null | grep -A1 'Name:' | grep 'Address' | awk '{print $2}')
+                IP1=$(nslookup technitium-1.technitium.dns.svc.cluster.local 2>/dev/null | grep -A1 'Name:' | grep 'Address' | awk '{print $2}')
+                IP2=$(nslookup technitium-2.technitium.dns.svc.cluster.local 2>/dev/null | grep -A1 'Name:' | grep 'Address' | awk '{print $2}')
+                if [ -n "$IP0" ] && [ -n "$IP1" ] && [ -n "$IP2" ]; then
+                  break
+                fi
+                echo "Waiting for DNS... ($i/30)"
+                sleep 2
+              done
+              
+              if [ -z "$IP0" ] || [ -z "$IP1" ] || [ -z "$IP2" ]; then
+                echo "ERROR: Could not resolve all backends"
+                echo "IP0=$IP0 IP1=$IP1 IP2=$IP2"
+                exit 1
+              fi
+              
+              echo "Resolved: technitium-0=$IP0, technitium-1=$IP1, technitium-2=$IP2"
+              
+              # Generate dnsdist config with resolved IPs
+              sed "s/TECHNITIUM_0_IP/$IP0/g; s/TECHNITIUM_1_IP/$IP1/g; s/TECHNITIUM_2_IP/$IP2/g" \
+                /etc/dnsdist-template/dnsdist.conf > /etc/dnsdist/dnsdist.conf
+              
+              echo "Generated config:"
+              cat /etc/dnsdist/dnsdist.conf
+          volumeMounts:
+            - name: config-template
+              mountPath: /etc/dnsdist-template
+              readOnly: true
+            - name: config
+              mountPath: /etc/dnsdist
       containers:
         - name: dnsdist
           image: powerdns/dnsdist-20:2.0.8
@@ -52,10 +94,69 @@ spec:
             limits:
               cpu: 50m
               memory: 150Mi
+        # Sidecar that watches Technitium pod IPs and restarts dnsdist if they change
+        # Regenerates config and kills dnsdist when IPs change
+        - name: watch-backends
+          image: busybox:1.38
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Storing initial backend IPs..."
+              resolve_ips() {
+                for name in technitium-0 technitium-1 technitium-2; do
+                  nslookup $name.technitium.dns.svc.cluster.local 2>/dev/null | grep -A1 'Name:' | grep 'Address' | awk '{print $2}'
+                done | sort
+              }
+              
+              resolve_ips > /tmp/initial-ips
+              echo "Initial IPs:"
+              cat /tmp/initial-ips
+              
+              echo "Watching for IP changes every 15 seconds..."
+              while true; do
+                sleep 15
+                resolve_ips > /tmp/current-ips
+                if ! diff -q /tmp/initial-ips /tmp/current-ips > /dev/null 2>&1; then
+                  echo "Backend IPs changed!"
+                  echo "Old: $(cat /tmp/initial-ips | tr '\n' ' ')"
+                  echo "New: $(cat /tmp/current-ips | tr '\n' ' ')"
+                  
+                  # Resolve new IPs
+                  IP0=$(nslookup technitium-0.technitium.dns.svc.cluster.local | grep -A1 'Name:' | grep 'Address' | awk '{print $2}')
+                  IP1=$(nslookup technitium-1.technitium.dns.svc.cluster.local | grep -A1 'Name:' | grep 'Address' | awk '{print $2}')
+                  IP2=$(nslookup technitium-2.technitium.dns.svc.cluster.local | grep -A1 'Name:' | grep 'Address' | awk '{print $2}')
+                  
+                  echo "Regenerating config with: $IP0, $IP1, $IP2"
+                  sed "s/TECHNITIUM_0_IP/$IP0/g; s/TECHNITIUM_1_IP/$IP1/g; s/TECHNITIUM_2_IP/$IP2/g" \
+                    /etc/dnsdist-template/dnsdist.conf > /etc/dnsdist/dnsdist.conf
+                  
+                  echo "Killing dnsdist to reload config..."
+                  pkill -9 dnsdist || killall -9 dnsdist || true
+                  
+                  # Update baseline
+                  cp /tmp/current-ips /tmp/initial-ips
+                  sleep 5
+                fi
+              done
+          volumeMounts:
+            - name: config-template
+              mountPath: /etc/dnsdist-template
+              readOnly: true
+            - name: config
+              mountPath: /etc/dnsdist
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              memory: 16Mi
       volumes:
-        - name: config
+        - name: config-template
           configMap:
             name: dnsdist-config
+        - name: config
+          emptyDir: {}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
