@@ -53,6 +53,8 @@ spec:
           mountPath: /config
         - name: data
           mountPath: /downloads
+        - name: watch
+          mountPath: /watch
       - image: jesec/flood:4.16.1
         name: flood
         command:
@@ -103,4 +105,6 @@ spec:
           server: 10.0.0.13
           path: /mnt/data/library/downloads
           readOnly: false
+      - name: watch
+        emptyDir: {}
       restartPolicy: Always
