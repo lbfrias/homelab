@@ -11,36 +11,37 @@ data:
     -- IPs are resolved from StatefulSet DNS names by init container
 
     -- Define backend Technitium servers (IPs injected by init container)
-    -- Port 538 = Technitium's PROXY protocol port for DNS
+    -- Port 538 = Technitium's PROXY protocol port for DNS queries
+    -- Port 53 = Regular DNS port for health checks (no PROXY protocol)
     -- useProxyProtocol sends real client IP to Technitium for logging
     newServer({
       address = "TECHNITIUM_0_IP:538",
+      healthCheckAddress = "TECHNITIUM_0_IP:53",
       name = "technitium-0",
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
-      useProxyProtocol = true,
-      healthCheckPort = 53
+      useProxyProtocol = true
     })
 
     newServer({
       address = "TECHNITIUM_1_IP:538",
+      healthCheckAddress = "TECHNITIUM_1_IP:53",
       name = "technitium-1",
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
-      useProxyProtocol = true,
-      healthCheckPort = 53
+      useProxyProtocol = true
     })
 
     newServer({
       address = "TECHNITIUM_2_IP:538",
+      healthCheckAddress = "TECHNITIUM_2_IP:53",
       name = "technitium-2",
       checkName = "google.com",
       checkInterval = 5,
       maxCheckFailures = 3,
-      useProxyProtocol = true,
-      healthCheckPort = 53
+      useProxyProtocol = true
     })
 
     -- Round-robin load balancing policy (default)
