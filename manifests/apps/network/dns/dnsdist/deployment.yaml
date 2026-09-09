@@ -72,7 +72,7 @@ spec:
               mountPath: /etc/dnsdist
       containers:
         - name: dnsdist
-          image: powerdns/dnsdist-20:2.0.8
+          image: powerdns/dnsdist-20:2.0.9
           args:
             - --config=/etc/dnsdist/dnsdist.conf
             - --supervised
