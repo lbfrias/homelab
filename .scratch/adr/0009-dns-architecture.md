@@ -98,6 +98,52 @@ per-connection `nmcli` settings because it needs no knowledge of the connection
 or device name — RPi NICs are still `eth0` at first boot and are renamed to
 `eno1` in Step 3, and DHCP-created connection names differ per node.
 
+## Forward over DNS-over-TLS, not plain UDP
+
+Forwarders are queried over TLS (`forwarderProtocol: Tls`), not UDP.
+
+Plain UDP has no retransmission: a single dropped packet upstream becomes a
+client-visible `SERVFAIL`. This was diagnosed from intermittent failures where
+Technitium exhausted *all four* forwarders at once, on names that resolved
+fine when tested individually. The decisive measurement was that during a
+burst, queries sent **directly to 1.1.1.1 — bypassing dnsdist and Technitium
+entirely — failed 14/40, while ICMP to that same address had 0% packet loss**.
+Small ICMP survived; UDP/53 was dropped. Because the loss originates upstream
+of the cluster, no change to the DNS software could have fixed it; only the
+transport could. TLS runs over TCP, which retransmits lost segments.
+
+Forwarders use the `domain (ip)` form:
+
+```
+cloudflare-dns.com (1.1.1.1), dns.quad9.net (9.9.9.9)
+```
+
+The domain is used for certificate validation; the parenthesised IP avoids a
+bootstrap dependency on resolving the forwarder's own name. Technitium rejects
+a bare IP under TLS (`Address must be a domain name`).
+
+`cacheMaximumEntries` is raised from the 10000 default to 100000. The default
+is small for a whole-network resolver: entries evict quickly, forcing constant
+upstream lookups, and every upstream lookup is another chance to hit loss.
+`serveStale` is left enabled so expired answers cushion upstream failures.
+
+## Resolver CPU must not be limited
+
+Technitium sets a CPU *request* (200m) and a memory limit, but **no CPU limit**.
+
+CFS throttling freezes the process for up to 100ms per period. For a
+latency-sensitive resolver this lands mid-query and produces forwarder
+timeouts. Under a 150m limit, technitium-1 was throttled in **57% of
+scheduling periods** (`nr_throttled 1331 / nr_periods 2336`). Requests, not
+limits, provide a proportional share under node contention, which is what
+matters during storms. Verify with:
+
+```sh
+kubectl exec -n dns technitium-0 -c technitium -- cat /sys/fs/cgroup/cpu.stat
+```
+
+`nr_periods 0` confirms no quota is enforced.
+
 ## Why 2 dnsdist + 3 Technitium
 
 - 2 VIPs match typical client DNS server limit
@@ -135,3 +181,59 @@ kubectl delete overlappingrangeipreservations -n kube-system <ip>
 kubectl delete pod -n dns <stuck-pod>
 ```
 
+
+## Runbook: intermittent client-visible SERVFAILs
+
+Symptom — pages occasionally fail to resolve, but retrying works, and the
+failing names resolve fine when tested by hand.
+
+First, decide whether the fault is *inside* the stack or *upstream* of it.
+Query a public resolver directly, bypassing dnsdist and Technitium, and
+compare UDP against ICMP to the same address:
+
+```sh
+dig +time=2 +tries=1 @1.1.1.1 <name> A     # UDP/53
+ping -c 30 1.1.1.1                          # ICMP
+```
+
+Run this from a workstation, not a node — the nodes have no `dig` (see
+measurement traps).
+
+If DNS fails while ICMP shows 0% loss, the packets are being dropped upstream
+of the cluster (router/ISP) and **no change to the DNS stack will fix it**.
+DoT forwarding (above) is the mitigation; the remaining suspect is the router
+— its CPU, NAT/conntrack table, or DNS interception.
+
+Check whether failures are concentrated or spread:
+
+```sh
+for p in technitium-0 technitium-1 technitium-2; do
+  echo -n "$p: "
+  kubectl logs -n dns $p -c technitium --since=15m | grep -c "^\[.*DNS Server failed to resolve"
+done
+```
+
+Roughly equal counts mean a shared upstream cause, not a bad backend.
+Simultaneous bursts across all three pods rule out per-pod causes such as CPU
+throttling.
+
+### Measurement traps
+
+These produced false conclusions during diagnosis:
+
+- **A node cannot query a macvlan VIP hosted on itself.** Probing 10.0.0.99
+  from the node running that dnsdist pod fails 100% — this is macvlan
+  host↔local-pod isolation, *not* an outage. Always test VIPs from an external
+  client.
+- **Random/NXDOMAIN probe names manufacture failures.** Flooding uncacheable
+  names forces full recursion and triggers upstream rate-limiting, so the test
+  creates the failures it measures. Measure with *real* domains; use uncommon
+  ones (not `google.com`) so they are not already cached.
+- **Technitium blames the last forwarder it tried.** Blame counts mirror
+  position in the forwarder list, so the named server is not the culprit. A
+  summary line listing all forwarders means all were exhausted.
+- **`grep -c "failed to resolve the request"` double-counts**, matching both the
+  summary and the exception line. Use `grep -c "^\[.*DNS Server failed to resolve"`
+  for client-visible failures.
+- Verify tooling exists before trusting a probe: `dig` is **not** installed on
+  the nodes, so a probe loop using it reports 100% failure (exit 127).

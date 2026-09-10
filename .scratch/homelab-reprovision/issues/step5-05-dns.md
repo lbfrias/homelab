@@ -95,6 +95,20 @@ Macvlan bridge mode has a "hairpin problem" — pods on the same node can't comm
 - Cluster nodes resolve via 1.1.1.1 / 1.0.0.1, never the VIPs above — the VIPs are
   served by pods on the nodes themselves, so depending on them deadlocks a cold boot.
   Pinned at provisioning time via `/etc/NetworkManager/conf.d/10-homelab-dns.conf`.
+- Forwarding uses **DNS-over-TLS**, not plain UDP. Intermittent SERVFAILs were
+  caused by UDP packet loss upstream of the cluster (proven: during a burst,
+  queries sent directly to 1.1.1.1, bypassing the whole stack, failed 14/40
+  while ICMP had 0% loss). TCP retransmits; UDP does not. Forwarders are
+  written as `domain (ip)` so certificates validate without needing to resolve
+  the forwarder's own name first.
+- Technitium cache raised to 100000 entries (default 10000 evicts too fast for a
+  whole-network resolver); `serveStale` enabled.
+- Technitium runs with **no CPU limit** (request 200m + memory limit only). A
+  150m limit throttled technitium-1 in 57% of scheduling periods, freezing it
+  mid-query. Check with `cat /sys/fs/cgroup/cpu.stat` — `nr_periods 0` is correct.
+- ADR-009 also records the measurement traps (macvlan host↔local-pod isolation
+  makes a node's own VIP look 100% down; random NXDOMAIN probes trigger upstream
+  rate-limiting and manufacture failures).
 - See ADR-009 for full architecture rationale
 - dnsdist deployment uses maxSurge: 0 to prevent IP exhaustion during rolling updates
 - A dnsdist pod stuck in `Init` with "Could not allocate IP in range" usually means a

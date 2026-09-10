@@ -164,6 +164,15 @@ depends on them cannot resolve until K3s is up — and K3s needs DNS to pull
 images. Pinned at provisioning time (Step 1) via a NetworkManager global-dns
 drop-in, `/etc/NetworkManager/conf.d/10-homelab-dns.conf`. See ADR-009.
 
+### Upstream Forwarding
+
+Technitium forwards over **DNS-over-TLS** to Cloudflare and Quad9, not plain
+UDP. UDP has no retransmission, so a packet dropped upstream of the cluster
+surfaces as a client-visible `SERVFAIL`; TCP retransmits instead. Forwarders
+are configured as `domain (ip)` (e.g. `cloudflare-dns.com (1.1.1.1)`) so the
+certificate validates without needing to resolve the forwarder's name first.
+See ADR-009 for the diagnostic runbook.
+
 ## Services
 
 ### Deployed
