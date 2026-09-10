@@ -20,7 +20,9 @@ timesource --ntp-server={{ server }}
 {% endfor %}
 
 #---------- Network ----------
-network --bootproto=dhcp --device=link --activate --onboot=yes
+# --nameserver pins DNS for the installer itself too, so the network install can
+# reach the Rocky mirror even if DHCP advertises unreachable resolvers.
+network --bootproto=dhcp --device=link --activate --onboot=yes --nameserver={{ node_dns_servers | join(',') }}
 network --hostname={{ item.name }}
 
 #---------- Root Password (locked/disabled) ----------
@@ -108,6 +110,17 @@ if [ -d /home/{{ username }}/.ssh ]; then
 fi
 
 # Note: Firewall disabled for K3s compatibility — SSH port open by default
+
+#---------- Node DNS ----------
+# Pin upstream resolvers regardless of DHCP or connection name. See
+# node_dns_servers in provisioning/vars.yaml for why nodes must not use the
+# in-cluster DNS VIPs.
+mkdir -p /etc/NetworkManager/conf.d
+cat > /etc/NetworkManager/conf.d/10-homelab-dns.conf << 'EOF'
+[global-dns-domain-*]
+servers={{ node_dns_servers | join(',') }}
+EOF
+chmod 644 /etc/NetworkManager/conf.d/10-homelab-dns.conf
 
 #---------- NAS Drive Mount (4TB USB HDD as RAID1 degraded) ----------
 # Create mount point for existing RAID array

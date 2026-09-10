@@ -38,8 +38,20 @@ write_files:
     owner: root:root
     permissions: '0644'
 
+  # Pin upstream resolvers. See node_dns_servers in provisioning/vars.yaml for why
+  # nodes must not use the in-cluster DNS VIPs.
+  - path: /etc/NetworkManager/conf.d/10-homelab-dns.conf
+    content: |
+      [global-dns-domain-*]
+      servers={{ node_dns_servers | join(',') }}
+    owner: root:root
+    permissions: '0644'
+
 runcmd:
   - systemctl restart sshd
+  # write_files may land after NetworkManager has already generated resolv.conf,
+  # so reload to pick up the DNS override.
+  - systemctl reload NetworkManager
 {% if item.os == 'raspios' %}
   # Migrate /var to attached HDD
   - |

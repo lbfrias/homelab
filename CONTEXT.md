@@ -156,6 +156,14 @@ Platform-specific requirements discovered during cluster bootstrap:
 | Home Assistant | 10.0.0.25 | LAN |
 | Omada Controller (planned) | 10.0.0.201 | LAN |
 
+### Node Resolvers
+
+Cluster nodes resolve via **1.1.1.1 / 1.0.0.1**, never the dnsdist VIPs above.
+The VIPs are served by pods running on the nodes themselves, so a node that
+depends on them cannot resolve until K3s is up — and K3s needs DNS to pull
+images. Pinned at provisioning time (Step 1) via a NetworkManager global-dns
+drop-in, `/etc/NetworkManager/conf.d/10-homelab-dns.conf`. See ADR-009.
+
 ## Services
 
 ### Deployed

@@ -1,0 +1,134 @@
+---
+# Backend resolution script shared by the dnsdist init container and sidecar.
+#
+# dnsdist cannot accept hostnames in newServer({address=...}) — it requires
+# literal IPs — so the Technitium StatefulSet pod DNS names must be resolved
+# and substituted into the config at pod start, and re-substituted whenever a
+# Technitium pod is rescheduled onto a new pod IP.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dnsdist-scripts
+  namespace: dns
+data:
+  resolve-backends.sh: |
+    #!/bin/sh
+    # Usage:
+    #   resolve-backends.sh once   - render config once, non-zero exit on failure
+    #   resolve-backends.sh watch  - render, then poll and re-render when IPs change
+    set -u
+
+    TEMPLATE=/etc/dnsdist-template/dnsdist.conf
+    CONFIG=/etc/dnsdist/dnsdist.conf
+    DOMAIN=technitium.dns.svc.cluster.local
+    BACKENDS="technitium-0 technitium-1 technitium-2"
+    POLL_INTERVAL=15
+    # A change must be observed twice, CONFIRM_DELAY apart, before we act on it.
+    # Without this a single blip during pod churn would restart dnsdist needlessly.
+    CONFIRM_DELAY=5
+    RESOLVE_RETRIES=3
+    STARTUP_ATTEMPTS=30
+
+    # Logs go to stderr so stdout carries only the resolved IPs.
+    log() { echo "[resolve-backends] $*" >&2; }
+
+    is_ipv4() {
+      echo "$1" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+    }
+
+    # Resolve one backend, retrying transient failures. Only ever emits a value
+    # that passes is_ipv4, so a failed lookup can never reach the config.
+    resolve_one() {
+      _name=$1
+      _try=0
+      while [ "$_try" -lt "$RESOLVE_RETRIES" ]; do
+        _ip=$(nslookup "$_name.$DOMAIN" 2>/dev/null \
+                | grep -A1 '^Name:' | grep '^Address' | awk '{print $2}' | head -1)
+        if is_ipv4 "${_ip:-}"; then
+          echo "$_ip"
+          return 0
+        fi
+        _try=$((_try + 1))
+        sleep 1
+      done
+      return 1
+    }
+
+    # All-or-nothing: emits three space-separated IPs, or fails without output.
+    # This is what prevents a partial result from blanking a backend.
+    resolve_all() {
+      _out=""
+      for _name in $BACKENDS; do
+        _ip=$(resolve_one "$_name") || return 1
+        _out="$_out${_out:+ }$_ip"
+      done
+      echo "$_out"
+    }
+
+    # Written to a temp file first so dnsdist can never read a half-written config.
+    render() {
+      sed "s/TECHNITIUM_0_IP/$1/g; s/TECHNITIUM_1_IP/$2/g; s/TECHNITIUM_2_IP/$3/g" \
+        "$TEMPLATE" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+    }
+
+    render_initial() {
+      _attempt=1
+      while [ "$_attempt" -le "$STARTUP_ATTEMPTS" ]; do
+        if _ips=$(resolve_all); then
+          render $_ips  # intentionally unquoted: splits into three arguments
+          log "Rendered config with backends: $_ips"
+          echo "$_ips"
+          return 0
+        fi
+        log "Waiting for all backends to resolve... ($_attempt/$STARTUP_ATTEMPTS)"
+        sleep 2
+        _attempt=$((_attempt + 1))
+      done
+      log "ERROR: could not resolve all backends after $STARTUP_ATTEMPTS attempts"
+      return 1
+    }
+
+    case "${1:-once}" in
+      once)
+        render_initial > /dev/null || exit 1
+        log "Generated config:"
+        cat "$CONFIG" >&2
+        ;;
+      watch)
+        # No pipeline here: it would run render_initial in a subshell and mask
+        # its exit status.
+        current=$(render_initial) || exit 1
+        log "Watching backends every ${POLL_INTERVAL}s (current: $current)"
+        while true; do
+          sleep "$POLL_INTERVAL"
+
+          if ! candidate=$(resolve_all); then
+            log "Resolution failed; keeping existing config"
+            continue
+          fi
+          [ "$candidate" = "$current" ] && continue
+
+          # Re-check before acting so we don't chase a transient reading.
+          sleep "$CONFIRM_DELAY"
+          if ! confirmed=$(resolve_all); then
+            log "Change seen but confirmation failed; keeping existing config"
+            continue
+          fi
+          if [ "$confirmed" != "$candidate" ]; then
+            log "Backend IPs unstable ($candidate vs $confirmed); waiting"
+            continue
+          fi
+
+          log "Backend IPs changed: [$current] -> [$confirmed]"
+          render $confirmed  # intentionally unquoted: splits into three arguments
+          log "Restarting dnsdist to load new backends"
+          pkill -9 dnsdist || true
+          current=$confirmed
+          sleep 5
+        done
+        ;;
+      *)
+        log "ERROR: unknown mode '${1:-}'"
+        exit 2
+        ;;
+    esac

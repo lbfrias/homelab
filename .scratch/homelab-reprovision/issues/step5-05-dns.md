@@ -87,5 +87,15 @@ Macvlan bridge mode has a "hairpin problem" — pods on the same node can't comm
 - StatefulSet provides stable DNS names: `technitium-{0,1,2}.technitium.dns.svc.cluster.local`
 - dnsdist init container resolves these names to pod IPs for config generation
 - dnsdist sidecar watches for IP changes every 15 seconds, regenerates config and restarts dnsdist
+- Init container and sidecar share one script (`dnsdist/scripts-configmap.yaml`), modes `once` / `watch`
+- Backend resolution is all-or-nothing and IPv4-validated: a transient lookup
+  failure used to write a blank backend address and kill dnsdist, which caused
+  intermittent network-wide DNS outages. A change must now also be confirmed
+  twice before dnsdist is restarted.
+- Cluster nodes resolve via 1.1.1.1 / 1.0.0.1, never the VIPs above — the VIPs are
+  served by pods on the nodes themselves, so depending on them deadlocks a cold boot.
+  Pinned at provisioning time via `/etc/NetworkManager/conf.d/10-homelab-dns.conf`.
 - See ADR-009 for full architecture rationale
 - dnsdist deployment uses maxSurge: 0 to prevent IP exhaustion during rolling updates
+- A dnsdist pod stuck in `Init` with "Could not allocate IP in range" usually means a
+  leaked `overlappingrangeipreservations` entry — see the runbook in ADR-009.

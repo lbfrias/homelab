@@ -12,6 +12,21 @@ timezone: "Asia/Manila"
 locale: "en_US.UTF-8"
 keyboard_layout: "us"
 
+# Node upstream DNS resolvers.
+#
+# Nodes must NOT point at the in-cluster DNS VIPs (10.0.0.98/.99). Those VIPs are
+# served by dnsdist pods running on these same nodes, so a node that depends on
+# them cannot resolve anything until K3s is up — and K3s itself needs DNS to pull
+# images. That circular dependency bricks a cold boot of the whole cluster.
+#
+# Applied via a NetworkManager global-dns override (conf.d drop-in), which wins
+# over both DHCP-supplied and per-connection DNS. Chosen over per-connection
+# `nmcli` settings because it needs no knowledge of the connection or device name
+# (RPi NICs are still `eth0` at first boot; they are renamed to `eno1` in Step 3).
+node_dns_servers:
+  - 1.1.1.1
+  - 1.0.0.1
+
 # NTP servers (defaults to Philippine NIST servers + global pool)
 ntp_servers:
   - 0.asia.pool.ntp.org
