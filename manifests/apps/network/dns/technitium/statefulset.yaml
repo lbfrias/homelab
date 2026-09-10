@@ -72,12 +72,15 @@ spec:
               mountPath: /run
             - name: status
               mountPath: /status
+          # No CPU limit: DNS is latency-critical and CFS throttling freezes the
+          # resolver mid-query, causing forwarder timeouts and client SERVFAILs.
+          # The request is what guarantees a proportional share under node
+          # contention (e.g. Longhorn rebuild storms), so it carries the weight.
           resources:
             requests:
-              cpu: 50m
+              cpu: 200m
               memory: 192Mi
             limits:
-              cpu: 150m
               memory: 384Mi
           readinessProbe:
             exec:

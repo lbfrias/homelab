@@ -53,7 +53,7 @@ data:
     log "Got API token"
     
     # Configure PROXY protocol settings
-    log "Configuring PROXY protocol settings..."
+    log "Configuring DNS server settings (PROXY protocol, DoT forwarders, cache)..."
     SETTINGS_URL="$API_URL/settings/set?token=$TOKEN"
     SETTINGS_URL="$SETTINGS_URL&enableDnsOverUdpProxy=true"
     SETTINGS_URL="$SETTINGS_URL&enableDnsOverTcpProxy=true"
@@ -63,12 +63,27 @@ data:
     
     # No URL encoding needed for comma-separated ACL
     SETTINGS_URL="$SETTINGS_URL&dnsReverseProxyNetworkACL=$PROXY_ACL"
+
+    # Forward over DNS-over-TLS instead of plain UDP.
+    # Plain UDP has no retransmission, so a single dropped packet upstream
+    # surfaces as a client-visible SERVFAIL. TLS runs over TCP, which
+    # retransmits lost segments, making resolution resilient to packet loss.
+    # Format is "domain (ip)": the domain is used for certificate validation
+    # and the IP avoids a bootstrap dependency on resolving the domain first.
+    # %20 encodes the space required by that format.
+    SETTINGS_URL="$SETTINGS_URL&forwarderProtocol=Tls"
+    SETTINGS_URL="$SETTINGS_URL&forwarders=cloudflare-dns.com%20(1.1.1.1),cloudflare-dns.com%20(1.0.0.1),dns.quad9.net%20(9.9.9.9),dns.quad9.net%20(149.112.112.112)"
+
+    # 10000 (the default) is small for a whole-network resolver; entries evict
+    # quickly and force constant upstream lookups. Each lookup is another
+    # chance to hit upstream packet loss.
+    SETTINGS_URL="$SETTINGS_URL&cacheMaximumEntries=100000"
     
     RESPONSE=$(wget -q -O - "$SETTINGS_URL")
     STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
     
     if [ "$STATUS" = "ok" ]; then
-      log "PROXY protocol configured successfully"
+      log "DNS server settings configured successfully"
     else
       log "WARNING: Settings may not have applied: $RESPONSE"
     fi
