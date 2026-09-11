@@ -10,6 +10,11 @@ kind: ConfigMap
 metadata:
   name: dnsdist-scripts
   namespace: dns
+  annotations:
+    # The data below is a shell script, not a manifest template. Its ${...}
+    # are shell variables, so Flux's strict-mode envsubst must not touch them
+    # (it fails on POLL_INTERVAL, which is set by the script itself).
+    kustomize.toolkit.fluxcd.io/substitute: disabled
 data:
   resolve-backends.sh: |
     #!/bin/sh
