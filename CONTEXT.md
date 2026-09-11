@@ -41,6 +41,7 @@ Architecture Decision Records are in [`.scratch/adr/`](.scratch/adr/):
 | [0010](.scratch/adr/0010-separate-macvlan-nads.md) | Separate Macvlan NADs per Node Architecture |
 | [0011](.scratch/adr/0011-ip-plan-as-source-of-truth.md) | IP Plan as Source of Truth |
 | [0012](.scratch/adr/0012-directory-structure-and-renovate-grouping.md) | Directory Structure and Renovate Grouping |
+| [0013](.scratch/adr/0013-descheduler-plugin-selection.md) | Descheduler Plugin Selection |
 
 ## Five-Step Provisioning Model
 
