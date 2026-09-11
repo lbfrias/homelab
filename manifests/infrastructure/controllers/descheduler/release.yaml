@@ -63,3 +63,17 @@ spec:
               enabled:
                 - RemovePodsViolatingInterPodAntiAffinity
                 - RemovePodsViolatingNodeAffinity
+        - name: longhorn-csi
+          pluginConfig:
+            - name: DefaultEvictor
+              args:
+                evictLocalStoragePods: true
+            - name: RemoveDuplicates
+              args:
+                namespaces:
+                  include:
+                    - longhorn-system
+          plugins:
+            balance:
+              enabled:
+                - RemoveDuplicates
