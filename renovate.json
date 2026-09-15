@@ -40,6 +40,12 @@
       "matchDatasources": ["helm"],
       "matchUpdateTypes": ["patch"],
       "automerge": true
+    },
+    {
+      "description": "linuxserver.io images use tags like '12.0ubu2604-ls48' (version + ubuntu base + incrementing ls build number). The default docker versioning scheme treats the '-lsNN' suffix as an incompatible variant since it changes every release, so updates are never detected. This regex versioning keeps the ubuntu base as the compatibility marker and the ls build number as the patch version.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["linuxserver/jellyfin", "lscr.io/linuxserver/jellyfin"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)ubu(?<compatibility>\\d+)-ls(?<patch>\\d+)$"
     }
   ],
   "ignorePaths": [
