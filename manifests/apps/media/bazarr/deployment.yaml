@@ -23,7 +23,7 @@ spec:
     spec:
       hostname: bazarr
       containers:
-      - image: linuxserver/bazarr:1.6.1
+      - image: linuxserver/bazarr:1.6.2
         name: bazarr
         env: 
         - name: PUID
