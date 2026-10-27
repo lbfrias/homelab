@@ -55,7 +55,7 @@ spec:
           mountPath: /downloads
         - name: watch
           mountPath: /watch
-      - image: jesec/flood:4.16.2
+      - image: jesec/flood:4.16.3
         name: flood
         command:
         - "flood"
